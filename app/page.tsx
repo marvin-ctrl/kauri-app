@@ -1,34 +1,60 @@
-export default function Home() {
-  return (
-    <main className="mx-auto max-w-xl p-6">
-      <h1 className="text-2xl font-bold mb-4">Kauri Futsal — V1</h1>
-      <p className="text-sm text-gray-600 mb-6">
-        Use the links below to open each feature.
-      </p>
-      <ul className="space-y-3">
-        <li>
-          <a className="block rounded border px-4 py-3 hover:bg-gray-50" href="/login">
-            Login (magic link)
-            <div className="text-xs text-gray-500">Sign in via email</div>
-          </a>
-        </li>
-        <li>
-          <a className="block rounded border px-4 py-3 hover:bg-gray-50" href="/dashboard">
-            Schedule (events)
-            <div className="text-xs text-gray-500">Lists events from Supabase</div>
-          </a>
-        </li>
-        <li>
-          <a className="block rounded border px-4 py-3 hover:bg-gray-50" href="/attendance">
-            Attendance (quick roll)
-            <div className="text-xs text-gray-500">Mark Present / Absent / Late</div>
-          </a>
-        </li>
-      </ul>
-      <p className="text-xs text-gray-500 mt-6">
-        Tip: Add at least one row in <code>events</code> (Supabase → Table editor) so
-        /dashboard has something to show.
-      </p>
-    </main>
-  );
+// /app/dashboard/page.tsx
+import { createClient } from '@supabase/supabase-js';
+
+const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabase = createClient(url, key);
+
+export default async function Dashboard() {
+  try {
+    // Quick ping to confirm envs are present
+    if (!url || !key) throw new Error('Missing env vars: NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY');
+
+    const { data: events, error } = await supabase
+      .from('events')
+      .select('id, starts_at, type, location')
+      .order('starts_at');
+
+    if (error) throw error;
+
+    if (!events || events.length === 0) {
+      return (
+        <main className="mx-auto max-w-2xl p-4">
+          <h1 className="mb-3 text-lg font-semibold">Schedule</h1>
+          <p className="text-sm text-gray-600">No events found. Add one in Supabase → <code>events</code>.</p>
+        </main>
+      );
+    }
+
+    return (
+      <main className="mx-auto max-w-2xl p-4">
+        <h1 className="mb-3 text-lg font-semibold">Schedule</h1>
+        <ul className="space-y-2">
+          {events.map(e => (
+            <li key={e.id} className="rounded border p-3">
+              <div className="text-sm font-medium">
+                {e.type} — {new Date(e.starts_at).toLocaleString()}
+              </div>
+              <div className="text-xs text-gray-600">{e.location}</div>
+            </li>
+          ))}
+        </ul>
+      </main>
+    );
+  } catch (err: any) {
+    return (
+      <main className="mx-auto max-w-2xl p-4">
+        <h1 className="mb-3 text-lg font-semibold">Schedule</h1>
+        <pre className="whitespace-pre-wrap rounded border bg-gray-50 p-3 text-xs text-red-700">
+{String(err?.message || err)}
+        </pre>
+        <p className="mt-2 text-xs text-gray-600">
+          Checks: 1) Supabase has at least one <code>events</code> row.
+          2) Vercel env vars set for Production+Preview.
+          3) RLS off on <code>events</code> (for now).
+          4) Redeploy after changing env vars.
+        </p>
+      </main>
+    );
+  }
 }
