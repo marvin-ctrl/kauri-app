@@ -4,12 +4,12 @@ import "./globals.css";
 
 const inter = Inter({
   subsets: ["latin"],
-  variable: "--font-geist-sans",   // keep same CSS var name you used
+  variable: "--font-geist-sans",
 });
 
 const robotoMono = Roboto_Mono({
   subsets: ["latin"],
-  variable: "--font-geist-mono",   // keep same CSS var name you used
+  variable: "--font-geist-mono",
 });
 
 export const metadata: Metadata = {
