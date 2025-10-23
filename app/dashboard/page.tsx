@@ -48,11 +48,9 @@ export default function DashboardPage() {
     router.replace('/login');
   };
 
-  if (loading) return (
-    <main className="min-h-screen grid place-items-center bg-neutral-50 text-neutral-900">
-      <p className="text-lg">Loading…</p>
-    </main>
-  );
+  if (loading) {
+    return <main className="min-h-screen grid place-items-center bg-neutral-50 text-neutral-900">Loading…</main>;
+  }
 
   return (
     <main className="min-h-screen bg-neutral-50 text-neutral-900 p-6">
@@ -84,7 +82,12 @@ export default function DashboardPage() {
                     {e.type === 'training' && '🏋️ '}
                     {e.type === 'game' && '⚽ '}
                     {e.type === 'tournament' && '🏆 '}
-                    {e.title || e.type}
+                    <a
+                      href={`/events/${e.id}/edit`}
+                      className="underline text-blue-700 hover:text-blue-800"
+                    >
+                      {e.title || e.type}
+                    </a>
                   </div>
                   <div className="text-sm text-neutral-800 mt-1">
                     📍 {e.location || 'TBC'} • {e.teams?.name || 'Unassigned'}
