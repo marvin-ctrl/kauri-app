@@ -1,0 +1,138 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
+
+type Team = { id: string; name: string };
+
+export default function AssignTeamPage() {
+  const router = useRouter();
+  const { id: playerId } = useParams<{ id: string }>();
+
+  const [playerName, setPlayerName] = useState('');
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [teamId, setTeamId] = useState('');
+  const [role, setRole] = useState<'player' | 'captain'>('player');
+  const [joinedAt, setJoinedAt] = useState<string>('');
+  const [msg, setMsg] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    const today = new Date();
+    setJoinedAt(today.toISOString().slice(0, 10)); // yyyy-mm-dd
+
+    (async () => {
+      const p = await supabase.from('players').select('first_name,last_name,preferred_name').eq('id', playerId).maybeSingle();
+      if (p.data) {
+        const n = p.data.preferred_name || `${p.data.first_name} ${p.data.last_name}`;
+        setPlayerName(n);
+      }
+      const t = await supabase.from('teams').select('id,name').order('name');
+      setTeams(t.data || []);
+    })();
+  }, [playerId]);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setMsg(null);
+
+    if (!teamId) { setMsg('Error: select a team.'); return; }
+
+    setSaving(true);
+    // prevent duplicate membership
+    const existing = await supabase
+      .from('team_players')
+      .select('id')
+      .eq('team_id', teamId)
+      .eq('player_id', playerId)
+      .maybeSingle();
+
+    if (existing.data) {
+      setSaving(false);
+      setMsg('Player is already on this team.');
+      return;
+    }
+
+    const { error } = await supabase.from('team_players').insert({
+      team_id: teamId,
+      player_id: playerId,
+      role,
+      joined_at: joinedAt || null
+    });
+
+    setSaving(false);
+    if (error) { setMsg(`Error: ${error.message}`); return; }
+    router.replace(`/players/${playerId}`);
+  }
+
+  return (
+    <main className="min-h-screen bg-neutral-50 text-neutral-900 p-6">
+      <div className="max-w-xl mx-auto bg-white border border-neutral-200 rounded-xl shadow-sm p-6 space-y-5">
+        <header className="flex items-center justify-between">
+          <h1 className="text-3xl font-extrabold tracking-tight">Assign to team</h1>
+          <a href={`/players/${playerId}`} className="px-3 py-2 rounded-md bg-neutral-200 hover:bg-neutral-300 text-neutral-900 font-semibold">Cancel</a>
+        </header>
+
+        <p className="text-sm text-neutral-700">Player: <span className="font-semibold">{playerName || '—'}</span></p>
+
+        <form onSubmit={submit} className="space-y-4">
+          <label className="block text-sm font-medium">
+            Team
+            <select
+              value={teamId}
+              onChange={(e)=>setTeamId(e.target.value)}
+              className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white"
+              required
+            >
+              <option value="">Select a team…</option>
+              {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+            </select>
+          </label>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <label className="block text-sm font-medium">
+              Role
+              <select
+                value={role}
+                onChange={(e)=>setRole(e.target.value as 'player'|'captain')}
+                className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white"
+              >
+                <option value="player">Player</option>
+                <option value="captain">Captain</option>
+              </select>
+            </label>
+
+            <label className="block text-sm font-medium">
+              Joined at
+              <input
+                type="date"
+                value={joinedAt}
+                onChange={(e)=>setJoinedAt(e.target.value)}
+                className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white"
+              />
+            </label>
+          </div>
+
+          <button type="submit" disabled={saving}
+            className="w-full bg-blue-700 hover:bg-blue-800 text-white rounded-md px-3 py-2 font-semibold disabled:opacity-60">
+            {saving ? 'Saving…' : 'Assign'}
+          </button>
+        </form>
+
+        {msg && <div className={`text-sm font-medium ${msg.startsWith('Error')?'text-red-800':'text-green-800'}`}>{msg}</div>}
+
+        {teams.length === 0 && (
+          <p className="text-sm text-neutral-700">
+            No teams found. Add one in Supabase Table Editor (`teams`) or via SQL:
+            <code className="block mt-1 bg-neutral-100 p-2 rounded">insert into teams (id, name) values (gen_random_uuid(), 'U10');</code>
+          </p>
+        )}
+      </div>
+    </main>
+  );
+}
