@@ -16,27 +16,25 @@ export default function PostAuth() {
     let cancelled = false;
 
     (async () => {
-      // Let Supabase parse the URL fragment and persist session
-      // A couple of polls handles slow email redirects
       for (let i = 0; i < 10; i++) {
         const { data: { session } } = await supabase.auth.getSession();
         if (session) break;
-        await new Promise(r => setTimeout(r, 300));
+        await new Promise(r => setTimeout(r, 250));
       }
-
       if (cancelled) return;
 
       const { data: { user } } = await supabase.auth.getUser();
-      if (user) router.replace('/dashboard');
-      else router.replace('/login');
+      router.replace(user ? '/dashboard' : '/login');
     })();
 
     return () => { cancelled = true; };
   }, [router]);
 
   return (
-    <main className="min-h-screen grid place-items-center">
-      <div>Finishing sign-in…</div>
+    <main className="min-h-screen grid place-items-center bg-neutral-50 text-neutral-900">
+      <div className="bg-white border border-neutral-200 rounded-md px-4 py-2">
+        Finishing sign-in…
+      </div>
     </main>
   );
 }
