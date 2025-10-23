@@ -10,15 +10,21 @@ const supabase = createClient(
 );
 
 type Team = { id: string; name: string };
+type Freq = 'none' | 'daily' | 'weekly' | 'monthly';
 
 function pad(n: number) { return String(n).padStart(2, '0'); }
 function toDateInput(d: Date) { return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
 function toTimeInput(d: Date) { return `${pad(d.getHours())}:${pad(d.getMinutes())}`; }
-function fromLocalDateTime(dateStr: string, timeStr: string) {
-  // dateStr: yyyy-mm-dd, timeStr: HH:MM
-  return new Date(`${dateStr}T${timeStr}:00`);
-}
+function fromLocalDateTime(dateStr: string, timeStr: string) { return new Date(`${dateStr}T${timeStr}:00`); }
 function addMinutes(d: Date, mins: number) { return new Date(d.getTime() + mins*60*1000); }
+
+function addInterval(d: Date, freq: Freq, interval: number): Date {
+  const x = new Date(d);
+  if (freq === 'daily') x.setDate(x.getDate() + interval);
+  else if (freq === 'weekly') x.setDate(x.getDate() + 7 * interval);
+  else if (freq === 'monthly') x.setMonth(x.getMonth() + interval);
+  return x;
+}
 
 export default function NewEventPage() {
   const router = useRouter();
@@ -32,10 +38,17 @@ export default function NewEventPage() {
   const now = useMemo(() => new Date(), []);
   const [startDate, setStartDate] = useState(toDateInput(now));
   const [startTime, setStartTime] = useState('17:00');
+  const [duration, setDuration] = useState(90);
   const [endDate, setEndDate] = useState(toDateInput(addMinutes(now, 90)));
   const [endTime, setEndTime] = useState('18:30');
+
+  // recurrence
+  const [freq, setFreq] = useState<Freq>('none');
+  const [interval, setInterval] = useState(1);     // every N days/weeks/months
+  const [count, setCount] = useState(6);           // total occurrences, including first
+  const [untilDate, setUntilDate] = useState<string>(''); // optional end date
   const [msg, setMsg] = useState<string | null>(null);
-  const [duration, setDuration] = useState(90); // minutes
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -46,7 +59,7 @@ export default function NewEventPage() {
     })();
   }, [router]);
 
-  // when start or duration changes, auto-set end
+  // auto end from duration
   useEffect(() => {
     const s = fromLocalDateTime(startDate, startTime);
     const e = addMinutes(s, duration);
@@ -54,41 +67,52 @@ export default function NewEventPage() {
     setEndTime(toTimeInput(e));
   }, [startDate, startTime, duration]);
 
-  // quick set helpers
-  function setPreset(hour: number, minute = 0) {
-    setStartTime(`${pad(hour)}:${pad(minute)}`);
-  }
-  function setNextDayPreset(hour: number, minute = 0) {
-    const d = new Date(fromLocalDateTime(startDate, startTime));
-    d.setDate(d.getDate() + 1);
-    setStartDate(toDateInput(d));
-    setStartTime(`${pad(hour)}:${pad(minute)}`);
+  function occurrencesPreview(): Array<{starts: Date; ends: Date}> {
+    const firstStart = fromLocalDateTime(startDate, startTime);
+    const firstEnd   = fromLocalDateTime(endDate,   endTime);
+    const list: Array<{starts: Date; ends: Date}> = [];
+    const total = freq === 'none' ? 1 : Math.max(1, Math.min(count, 52));
+
+    let s = new Date(firstStart);
+    let e = new Date(firstEnd);
+    for (let i = 0; i < total; i++) {
+      if (untilDate) {
+        const until = new Date(`${untilDate}T23:59:59`);
+        if (s > until) break;
+      }
+      list.push({ starts: new Date(s), ends: new Date(e) });
+      if (freq === 'none') break;
+      s = addInterval(s, freq, interval);
+      e = addInterval(e, freq, interval);
+    }
+    return list;
   }
 
   async function createEvent(e: React.FormEvent) {
     e.preventDefault();
     setMsg(null);
 
-    const starts = fromLocalDateTime(startDate, startTime);
-    const ends = fromLocalDateTime(endDate, endTime);
+    const prev = occurrencesPreview();
+    if (prev.length === 0) { setMsg('Error: no valid occurrences.'); return; }
 
-    if (!(startDate && startTime && endDate && endTime)) {
-      setMsg('Error: start and end are required.');
-      return;
-    }
-    if (ends <= starts) {
-      setMsg('Error: End must be after start.');
-      return;
-    }
+    setSubmitting(true);
 
-    const { error } = await supabase.from('events').insert({
+    const seriesId = (freq !== 'none' && 'crypto' in globalThis && 'randomUUID' in crypto)
+      ? crypto.randomUUID()
+      : null;
+
+    const rows = prev.map(({starts, ends}) => ({
+      series_id: seriesId,
       team_id: teamId || null,
       type,
       title: title || null,
       location: location || null,
       starts_at: starts.toISOString(),
       ends_at: ends.toISOString(),
-    });
+    }));
+
+    const { error } = await supabase.from('events').insert(rows);
+    setSubmitting(false);
 
     if (error) { setMsg(`Error: ${error.message}`); return; }
     router.replace('/dashboard');
@@ -96,11 +120,10 @@ export default function NewEventPage() {
 
   return (
     <main className="min-h-screen bg-neutral-50 text-neutral-900 p-6">
-      <div className="max-w-xl mx-auto bg-white border border-neutral-200 rounded-xl shadow-sm p-6 space-y-5">
+      <div className="max-w-2xl mx-auto bg-white border border-neutral-200 rounded-xl shadow-sm p-6 space-y-6">
         <h1 className="text-3xl font-extrabold tracking-tight">Create Event</h1>
 
-        <form onSubmit={createEvent} className="space-y-4">
-
+        <form onSubmit={createEvent} className="space-y-5">
           <label className="block text-sm font-medium">
             Team
             <select
@@ -142,86 +165,112 @@ export default function NewEventPage() {
             />
           </label>
 
-          {/* Start pickers */}
+          {/* Start */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <label className="block text-sm font-medium">
               Start date
-              <input
-                type="date" required value={startDate}
+              <input type="date" required value={startDate}
                 onChange={e=>setStartDate(e.target.value)}
-                className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white text-neutral-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
-              />
+                className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white text-neutral-900 focus:outline-none focus:ring-2 focus:ring-blue-600"/>
             </label>
             <label className="block text-sm font-medium">
               Start time
-              <input
-                type="time" required value={startTime}
+              <input type="time" required value={startTime}
                 onChange={e=>setStartTime(e.target.value)}
-                className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white text-neutral-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
-              />
+                className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white text-neutral-900 focus:outline-none focus:ring-2 focus:ring-blue-600"/>
             </label>
-          </div>
-
-          {/* Quick time presets */}
-          <div className="flex flex-wrap gap-2">
-            <span className="text-sm font-medium mr-1">Quick start:</span>
-            <button type="button" className="btn btn-primary"
-              onClick={()=>setPreset(16,0)}>Today 4:00p</button>
-            <button type="button" className="btn btn-primary"
-              onClick={()=>setPreset(17,0)}>Today 5:00p</button>
-            <button type="button" className="btn btn-primary"
-              onClick={()=>setPreset(18,0)}>Today 6:00p</button>
-            <button type="button" className="btn"
-              onClick={()=>setNextDayPreset(17,0)}>Tomorrow 5:00p</button>
           </div>
 
           {/* Duration presets */}
           <div className="flex flex-wrap gap-2 items-center">
             <span className="text-sm font-medium">Duration:</span>
-            {[60, 75, 90, 105, 120].map(min => (
-              <button
-                key={min}
-                type="button"
+            {[60,75,90,105,120].map(min => (
+              <button key={min} type="button"
                 onClick={()=>setDuration(min)}
-                className={`px-3 py-1 rounded border ${
-                  duration===min ? 'bg-blue-700 text-white border-blue-700' : 'bg-white text-neutral-900 border-neutral-300'
-                }`}
-              >
+                className={`px-3 py-1 rounded border ${duration===min ? 'bg-blue-700 text-white border-blue-700':'bg-white text-neutral-900 border-neutral-300'}`}>
                 {min}m
               </button>
             ))}
           </div>
 
-          {/* End pickers (editable) */}
+          {/* End */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <label className="block text-sm font-medium">
               End date
-              <input
-                type="date" required value={endDate}
+              <input type="date" required value={endDate}
                 onChange={e=>setEndDate(e.target.value)}
-                className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white text-neutral-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
-              />
+                className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white text-neutral-900 focus:outline-none focus:ring-2 focus:ring-blue-600"/>
             </label>
             <label className="block text-sm font-medium">
               End time
-              <input
-                type="time" required value={endTime}
+              <input type="time" required value={endTime}
                 onChange={e=>setEndTime(e.target.value)}
-                className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white text-neutral-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
-              />
+                className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white text-neutral-900 focus:outline-none focus:ring-2 focus:ring-blue-600"/>
             </label>
           </div>
 
-          <button type="submit" className="w-full bg-blue-700 hover:bg-blue-800 text-white rounded-md px-3 py-2 font-semibold">
-            Save
+          {/* Recurrence */}
+          <div className="border border-neutral-200 rounded-lg p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-bold">Repeat</label>
+              <select value={freq} onChange={e=>setFreq(e.target.value as Freq)}
+                className="border border-neutral-300 rounded-md px-3 py-2 bg-white">
+                <option value="none">Does not repeat</option>
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+              </select>
+            </div>
+
+            {freq !== 'none' && (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <label className="block text-sm font-medium">
+                    Every
+                    <input type="number" min={1} value={interval}
+                      onChange={e=>setInterval(Math.max(1, Number(e.target.value) || 1))}
+                      className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white"/>
+                  </label>
+
+                  <label className="block text-sm font-medium">
+                    Count (max 52)
+                    <input type="number" min={1} max={52} value={count}
+                      onChange={e=>setCount(Math.min(52, Math.max(1, Number(e.target.value) || 1)))}
+                      className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white"/>
+                  </label>
+
+                  <label className="block text-sm font-medium">
+                    Until (optional)
+                    <input type="date" value={untilDate}
+                      onChange={e=>setUntilDate(e.target.value)}
+                      className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white"/>
+                  </label>
+                </div>
+
+                {/* Preview */}
+                <details className="text-sm">
+                  <summary className="cursor-pointer font-medium">Preview first 5</summary>
+                  <ul className="mt-2 list-disc pl-5 text-neutral-700">
+                    {occurrencesPreview().slice(0,5).map((o,i)=>(
+                      <li key={i}>
+                        {o.starts.toLocaleString('en-NZ', {weekday:'short', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'})}
+                        {' → '}
+                        {o.ends.toLocaleString('en-NZ', {hour:'2-digit', minute:'2-digit'})}
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              </>
+            )}
+          </div>
+
+          <button type="submit" disabled={submitting}
+            className="w-full bg-blue-700 hover:bg-blue-800 text-white rounded-md px-3 py-2 font-semibold disabled:opacity-60">
+            {submitting ? 'Saving…' : 'Save'}
           </button>
         </form>
 
-        {msg && (
-          <div className={`text-sm font-medium ${msg.startsWith('Error') ? 'text-red-800' : 'text-green-800'}`}>
-            {msg}
-          </div>
-        )}
+        {msg && <div className={`text-sm font-medium ${msg.startsWith('Error')?'text-red-800':'text-green-800'}`}>{msg}</div>}
       </div>
     </main>
   );
