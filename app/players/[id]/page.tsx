@@ -1,0 +1,76 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useParams } from 'next/navigation';
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
+
+type Player = {
+  id: string; first_name: string; last_name: string; preferred_name: string | null;
+  dob: string | null; jersey_no: number | null; status: string | null; notes: string | null; photo_url: string | null;
+};
+type Team = { id: string; name: string };
+type TeamPlayer = { id: string; team_id: string; player_id: string; role: string; teams: Team };
+
+export default function PlayerProfile() {
+  const { id } = useParams<{ id: string }>();
+  const [player, setPlayer] = useState<Player | null>(null);
+  const [teams, setTeams] = useState<TeamPlayer[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => { (async () => {
+    const [p, tp] = await Promise.all([
+      supabase.from('players').select('*').eq('id', id).maybeSingle(),
+      supabase.from('team_players').select('id, team_id, player_id, role, teams(name)').eq('player_id', id)
+    ]);
+    setPlayer(p.data || null);
+    setTeams((tp.data as any) || []);
+    setLoading(false);
+  })(); }, [id]);
+
+  if (loading) return <main className="min-h-screen grid place-items-center">Loading…</main>;
+  if (!player) return <main className="min-h-screen grid place-items-center">Not found.</main>;
+
+  const displayName = player.preferred_name || `${player.first_name} ${player.last_name}`;
+
+  return (
+    <main className="min-h-screen bg-neutral-50 text-neutral-900 p-6">
+      <div className="max-w-4xl mx-auto space-y-6">
+        <header className="bg-white border border-neutral-200 rounded-xl shadow-sm p-6 flex items-center gap-4">
+          <div className="w-16 h-16 rounded-lg bg-neutral-200 overflow-hidden">
+            {player.photo_url ? <img src={player.photo_url} alt={displayName} className="w-full h-full object-cover" /> : null}
+          </div>
+          <div className="flex-1">
+            <h1 className="text-3xl font-extrabold tracking-tight">{displayName}</h1>
+            <p className="text-sm text-neutral-700">
+              {player.status || 'active'} {player.jersey_no ? `• #${player.jersey_no}` : ''}
+              {player.dob ? ` • DoB: ${new Date(player.dob).toLocaleDateString('en-NZ')}` : ''}
+            </p>
+          </div>
+          <a href={`/players/${player.id}/edit`} className="px-3 py-2 rounded-md bg-blue-700 hover:bg-blue-800 text-white font-semibold">Edit</a>
+        </header>
+
+        <section className="bg-white border border-neutral-200 rounded-xl shadow-sm p-6">
+          <h2 className="text-xl font-bold mb-3">Teams</h2>
+          {teams.length === 0 ? (
+            <p className="text-neutral-700">No teams. Assign from roster or add a control later.</p>
+          ) : (
+            <ul className="list-disc pl-5">
+              {teams.map(t => (
+                <li key={t.id} className="text-sm">{t.teams?.name || 'Team'} {t.role !== 'player' ? `• ${t.role}` : ''}</li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section className="bg-white border border-neutral-200 rounded-xl shadow-sm p-6">
+          <h2 className="text-xl font-bold mb-3">Notes</h2>
+          <p className="text-sm text-neutral-800 whitespace-pre-wrap">{player.notes || '—'}</p>
+        </section>
+      </div>
+    </main>
+  );
+}
