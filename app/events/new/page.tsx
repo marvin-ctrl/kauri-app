@@ -19,6 +19,7 @@ export default function NewEventPage() {
   const [title, setTitle] = useState('');
   const [location, setLocation] = useState('');
   const [startsAt, setStartsAt] = useState('');
+  const [endsAt, setEndsAt] = useState('');
   const [msg, setMsg] = useState<string | null>(null);
 
   useEffect(() => {
@@ -30,16 +31,31 @@ export default function NewEventPage() {
     })();
   }, [router]);
 
+  function onStartChange(v: string) {
+    setStartsAt(v);
+    if (!endsAt) {
+      const start = new Date(v);
+      const end = new Date(start.getTime() + 90 * 60 * 1000);
+      setEndsAt(end.toISOString().slice(0,16)); // yyyy-MM-ddTHH:mm
+    }
+  }
+
   async function createEvent(e: React.FormEvent) {
     e.preventDefault();
     setMsg(null);
+
+    if (!startsAt || !endsAt) { setMsg('Error: start and end are required.'); return; }
+    if (new Date(endsAt) <= new Date(startsAt)) { setMsg('Error: End must be after start.'); return; }
+
     const { error } = await supabase.from('events').insert({
       team_id: teamId || null,
       type,
       title: title || null,
       location: location || null,
       starts_at: new Date(startsAt).toISOString(),
+      ends_at: new Date(endsAt).toISOString(),
     });
+
     if (error) { setMsg(`Error: ${error.message}`); return; }
     router.replace('/dashboard');
   }
@@ -96,7 +112,16 @@ export default function NewEventPage() {
             <input
               type="datetime-local" required
               className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white text-neutral-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
-              value={startsAt} onChange={e=>setStartsAt(e.target.value)}
+              value={startsAt} onChange={e=>onStartChange(e.target.value)}
+            />
+          </label>
+
+          <label className="block text-sm font-medium">
+            End
+            <input
+              type="datetime-local" required
+              className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white text-neutral-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+              value={endsAt} onChange={e=>setEndsAt(e.target.value)}
             />
           </label>
 
