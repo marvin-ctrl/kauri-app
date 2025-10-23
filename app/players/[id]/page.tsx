@@ -50,17 +50,26 @@ export default function PlayerProfile() {
               {player.dob ? ` • DoB: ${new Date(player.dob).toLocaleDateString('en-NZ')}` : ''}
             </p>
           </div>
-          <a href={`/players/${player.id}/edit`} className="px-3 py-2 rounded-md bg-blue-700 hover:bg-blue-800 text-white font-semibold">Edit</a>
+          <div className="flex gap-2">
+            <a href={`/players/${player.id}/assign`} className="px-3 py-2 rounded-md bg-neutral-200 hover:bg-neutral-300 text-neutral-900 font-semibold">
+              Assign to team
+            </a>
+            <a href={`/players/${player.id}/edit`} className="px-3 py-2 rounded-md bg-blue-700 hover:bg-blue-800 text-white font-semibold">
+              Edit
+            </a>
+          </div>
         </header>
 
         <section className="bg-white border border-neutral-200 rounded-xl shadow-sm p-6">
           <h2 className="text-xl font-bold mb-3">Teams</h2>
           {teams.length === 0 ? (
-            <p className="text-neutral-700">No teams. Assign from roster or add a control later.</p>
+            <p className="text-neutral-700">No teams. Use “Assign to team”.</p>
           ) : (
             <ul className="list-disc pl-5">
               {teams.map(t => (
-                <li key={t.id} className="text-sm">{t.teams?.name || 'Team'} {t.role !== 'player' ? `• ${t.role}` : ''}</li>
+                <li key={t.id} className="text-sm">
+                  {t.teams?.name || 'Team'} {t.role !== 'player' ? `• ${t.role}` : ''}
+                </li>
               ))}
             </ul>
           )}
