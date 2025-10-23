@@ -20,16 +20,25 @@ export default function PlayerProfile() {
   const [player, setPlayer] = useState<Player | null>(null);
   const [teams, setTeams] = useState<TeamPlayer[]>([]);
   const [loading, setLoading] = useState(true);
+  const [msg, setMsg] = useState<string | null>(null);
 
-  useEffect(() => { (async () => {
+  async function load() {
     const [p, tp] = await Promise.all([
       supabase.from('players').select('*').eq('id', id).maybeSingle(),
       supabase.from('team_players').select('id, team_id, player_id, role, teams(name)').eq('player_id', id)
     ]);
     setPlayer(p.data || null);
     setTeams((tp.data as any) || []);
-    setLoading(false);
-  })(); }, [id]);
+  }
+
+  useEffect(() => { (async () => { await load(); setLoading(false); })(); }, [id]);
+
+  async function remove(teamPlayerId: string) {
+    setMsg(null);
+    const { error } = await supabase.from('team_players').delete().eq('id', teamPlayerId);
+    if (error) { setMsg(`Error: ${error.message}`); return; }
+    await load();
+  }
 
   if (loading) return <main className="min-h-screen grid place-items-center">Loading…</main>;
   if (!player) return <main className="min-h-screen grid place-items-center">Not found.</main>;
@@ -52,7 +61,7 @@ export default function PlayerProfile() {
           </div>
           <div className="flex gap-2">
             <a href={`/players/${player.id}/assign`} className="px-3 py-2 rounded-md bg-neutral-200 hover:bg-neutral-300 text-neutral-900 font-semibold">
-              Assign to team
+              Assign to teams
             </a>
             <a href={`/players/${player.id}/edit`} className="px-3 py-2 rounded-md bg-blue-700 hover:bg-blue-800 text-white font-semibold">
               Edit
@@ -63,16 +72,26 @@ export default function PlayerProfile() {
         <section className="bg-white border border-neutral-200 rounded-xl shadow-sm p-6">
           <h2 className="text-xl font-bold mb-3">Teams</h2>
           {teams.length === 0 ? (
-            <p className="text-neutral-700">No teams. Use “Assign to team”.</p>
+            <p className="text-neutral-700">No teams. Use “Assign to teams”.</p>
           ) : (
-            <ul className="list-disc pl-5">
+            <ul className="space-y-2">
               {teams.map(t => (
-                <li key={t.id} className="text-sm">
-                  {t.teams?.name || 'Team'} {t.role !== 'player' ? `• ${t.role}` : ''}
+                <li key={t.id} className="flex items-center justify-between border border-neutral-200 rounded-md p-3">
+                  <div className="text-sm">
+                    <span className="font-semibold">{t.teams?.name || 'Team'}</span>
+                    {t.role !== 'player' ? <span className="ml-2 text-neutral-700">• {t.role}</span> : null}
+                  </div>
+                  <button
+                    onClick={() => remove(t.id)}
+                    className="px-2 py-1 rounded bg-red-700 hover:bg-red-800 text-white text-sm"
+                  >
+                    Remove
+                  </button>
                 </li>
               ))}
             </ul>
           )}
+          {msg && <p className="mt-3 text-sm text-red-800">{msg}</p>}
         </section>
 
         <section className="bg-white border border-neutral-200 rounded-xl shadow-sm p-6">
