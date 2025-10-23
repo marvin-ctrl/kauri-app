@@ -48,7 +48,9 @@ export default function DashboardPage() {
     router.replace('/login');
   };
 
-  if (loading) return <main className="min-h-screen grid place-items-center">Loading…</main>;
+  if (loading) {
+    return <main className="min-h-screen grid place-items-center">Loading…</main>;
+  }
 
   return (
     <main className="min-h-screen bg-gray-50 p-6">
@@ -58,9 +60,14 @@ export default function DashboardPage() {
             <h1 className="text-2xl font-bold">Dashboard</h1>
             <p className="text-sm text-gray-600">{email}</p>
           </div>
-          <button onClick={signOut} className="px-3 py-2 rounded bg-gray-900 text-white">
-            Sign out
-          </button>
+          <div className="flex items-center gap-2">
+            <a href="/events/new" className="px-3 py-2 rounded bg-blue-600 text-white">
+              New event
+            </a>
+            <button onClick={signOut} className="px-3 py-2 rounded bg-gray-900 text-white">
+              Sign out
+            </button>
+          </div>
         </header>
 
         <section className="bg-white rounded-lg shadow-sm p-6">
@@ -82,7 +89,11 @@ export default function DashboardPage() {
                   </div>
                   <div className="text-sm text-gray-500">
                     {new Date(e.starts_at).toLocaleString('en-NZ', {
-                      weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                      weekday: 'short',
+                      month: 'short',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
                     })}
                   </div>
                 </li>
