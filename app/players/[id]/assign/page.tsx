@@ -1,213 +1,48 @@
-'use client';
+// inside app/players/[id]/assign/page.tsx submit()
+const termId = localStorage.getItem('kauri.termId');
+if (!termId) { setMsg('Select a term.'); setSaving(false); return; }
 
-import { useEffect, useMemo, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
-
-type Team = { id: string; name: string };
-
-export default function AssignTeamsPage() {
-  const router = useRouter();
-  const { id: playerId } = useParams<{ id: string }>();
-
-  const [playerName, setPlayerName] = useState('');
-  const [allTeams, setAllTeams] = useState<Team[]>([]);
-  const [currentTeamIds, setCurrentTeamIds] = useState<Set<string>>(new Set());
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [role, setRole] = useState<'player' | 'captain'>('player');
-  const [joinedAt, setJoinedAt] = useState<string>('');
-  const [q, setQ] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [msg, setMsg] = useState<string | null>(null);
-
-  useEffect(() => {
-    const today = new Date();
-    setJoinedAt(today.toISOString().slice(0, 10)); // yyyy-mm-dd
-
-    (async () => {
-      const p = await supabase
-        .from('players')
-        .select('first_name,last_name,preferred_name')
-        .eq('id', playerId)
-        .maybeSingle();
-
-      if (p.data) {
-        const n = p.data.preferred_name || `${p.data.first_name} ${p.data.last_name}`;
-        setPlayerName(n);
-      }
-
-      const t = await supabase.from('teams').select('id,name').order('name');
-      setAllTeams(t.data || []);
-
-      const tp = await supabase.from('team_players').select('team_id').eq('player_id', playerId);
-      setCurrentTeamIds(new Set((tp.data || []).map(r => r.team_id)));
-    })();
-  }, [playerId]);
-
-  const filteredTeams = useMemo(() => {
-    const term = q.trim().toLowerCase();
-    return allTeams.filter(t => (term ? t.name.toLowerCase().includes(term) : true));
-  }, [allTeams, q]);
-
-  function toggle(teamId: string) {
-    const next = new Set(selected);
-    if (next.has(teamId)) next.delete(teamId);
-    else next.add(teamId);
-    setSelected(next);
-  }
-
-  function selectAll() {
-    const ids = filteredTeams.map(t => t.id).filter(id => !currentTeamIds.has(id));
-    setSelected(new Set(ids));
-  }
-
-  function clearAll() {
-    setSelected(new Set());
-  }
-
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
-    setMsg(null);
-
-    if (selected.size === 0) { setMsg('Select at least one new team.'); return; }
-    setSaving(true);
-
-    // fetch latest memberships to avoid races
-    const latest = await supabase.from('team_players').select('team_id').eq('player_id', playerId);
-    const already = new Set((latest.data || []).map(r => r.team_id));
-
-    const rows = Array.from(selected)
-      .filter(team_id => !already.has(team_id))
-      .map(team_id => ({
-        team_id,
-        player_id: String(playerId),
-        role,
-        joined_at: joinedAt || null
-      }));
-
-    if (rows.length === 0) {
-      setSaving(false);
-      setMsg('Player already belongs to all selected teams.');
-      return;
-    }
-
-    const { error } = await supabase.from('team_players').insert(rows);
-    setSaving(false);
-
-    if (error) { setMsg(`Error: ${error.message}`); return; }
-    router.replace(`/players/${playerId}`);
-  }
-
-  return (
-    <main className="min-h-screen bg-neutral-50 text-neutral-900 p-6">
-      <div className="max-w-2xl mx-auto bg-white border border-neutral-200 rounded-xl shadow-sm p-6 space-y-5">
-        <header className="flex items-center justify-between">
-          <h1 className="text-3xl font-extrabold tracking-tight">Assign to teams</h1>
-          <a
-            href={`/players/${playerId}`}
-            className="px-3 py-2 rounded-md bg-neutral-200 hover:bg-neutral-300 text-neutral-900 font-semibold"
-          >
-            Cancel
-          </a>
-        </header>
-
-        <p className="text-sm text-neutral-700">
-          Player: <span className="font-semibold">{playerName || '—'}</span>
-        </p>
-
-        <div className="flex flex-wrap gap-3 items-center">
-          <input
-            placeholder="Search teams…"
-            value={q}
-            onChange={e=>setQ(e.target.value)}
-            className="border border-neutral-300 rounded-md px-3 py-2 bg-white"
-          />
-          <button type="button" onClick={selectAll} className="px-3 py-2 rounded-md bg-neutral-200 hover:bg-neutral-300 text-neutral-900">
-            Select all
-          </button>
-          <button type="button" onClick={clearAll} className="px-3 py-2 rounded-md bg-neutral-200 hover:bg-neutral-300 text-neutral-900">
-            Clear
-          </button>
-        </div>
-
-        <form onSubmit={submit} className="space-y-4">
-          <div className="border border-neutral-200 rounded-lg divide-y">
-            {filteredTeams.map(t => {
-              const already = currentTeamIds.has(t.id);
-              const disabled = already;
-              const checked = selected.has(t.id);
-              return (
-                <label key={t.id} className="flex items-center justify-between p-3">
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="checkbox"
-                      disabled={disabled}
-                      checked={checked}
-                      onChange={()=>toggle(t.id)}
-                      className="h-4 w-4"
-                    />
-                    <span className={`text-sm ${already ? 'text-neutral-500' : 'text-neutral-900'}`}>
-                      {t.name}{already ? ' • already assigned' : ''}
-                    </span>
-                  </div>
-                </label>
-              );
-            })}
-            {filteredTeams.length === 0 && (
-              <div className="p-3 text-sm text-neutral-700">No teams found.</div>
-            )}
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <label className="block text-sm font-medium">
-              Role for selected
-              <select
-                value={role}
-                onChange={e=>setRole(e.target.value as 'player'|'captain')}
-                className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white"
-              >
-                <option value="player">Player</option>
-                <option value="captain">Captain</option>
-              </select>
-            </label>
-
-            <label className="block text-sm font-medium">
-              Joined at
-              <input
-                type="date"
-                value={joinedAt}
-                onChange={e=>setJoinedAt(e.target.value)}
-                className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white"
-              />
-            </label>
-          </div>
-
-          <button
-            type="submit"
-            disabled={saving}
-            className="w-full bg-blue-700 hover:bg-blue-800 text-white rounded-md px-3 py-2 font-semibold disabled:opacity-60"
-          >
-            {saving ? 'Assigning…' : 'Assign to selected teams'}
-          </button>
-
-          {msg && (
-            <div className={`text-sm font-medium ${msg.startsWith('Error') ? 'text-red-800' : 'text-green-800'}`}>
-              {msg}
-            </div>
-          )}
-        </form>
-
-        {allTeams.length === 0 && (
-          <p className="text-sm text-neutral-700">
-            No teams exist. Create some in the <b>teams</b> table, then return.
-          </p>
-        )}
-      </div>
-    </main>
-  );
+// 1) ensure player_terms exists
+const pt = await supabase.from('player_terms')
+  .select('id').eq('player_id', String(playerId)).eq('term_id', termId).maybeSingle();
+let playerTermId = pt.data?.id as string | undefined;
+if (!playerTermId) {
+  const ins = await supabase.from('player_terms')
+    .insert({ player_id: String(playerId), term_id: termId, status: 'registered' })
+    .select('id').single();
+  if (ins.error || !ins.data) { setMsg(`Error: ${ins.error?.message}`); setSaving(false); return; }
+  playerTermId = ins.data.id;
 }
+
+// 2) ensure team_terms for each selected team
+const teamTermIds: string[] = [];
+for (const team_id of Array.from(selected)) {
+  const tt = await supabase.from('team_terms')
+    .select('id').eq('team_id', team_id).eq('term_id', termId).maybeSingle();
+  if (tt.data?.id) teamTermIds.push(tt.data.id);
+  else {
+    const ins = await supabase.from('team_terms')
+      .insert({ team_id, term_id: termId })
+      .select('id').single();
+    if (ins.error || !ins.data) { setMsg(`Error: ${ins.error?.message}`); setSaving(false); return; }
+    teamTermIds.push(ins.data.id);
+  }
+}
+
+// 3) insert memberships, avoid duplicates
+const existing = await supabase.from('memberships')
+  .select('team_term_id')
+  .eq('player_term_id', playerTermId);
+const existingSet = new Set((existing.data || []).map(r => r.team_term_id));
+
+const rows = teamTermIds
+  .filter(ttid => !existingSet.has(ttid))
+  .map(ttid => ({ player_term_id: playerTermId!, team_term_id: ttid, role }));
+
+if (rows.length) {
+  const { error } = await supabase.from('memberships').insert(rows);
+  if (error) { setMsg(`Error: ${error.message}`); setSaving(false); return; }
+}
+
+setSaving(false);
+router.replace(`/players/${playerId}`);
