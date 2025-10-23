@@ -61,10 +61,22 @@ export default function DashboardPage() {
             <p className="text-sm text-neutral-700">{email}</p>
           </div>
           <div className="flex items-center gap-2">
-            <a href="/events/new" className="px-3 py-2 rounded-md bg-blue-700 hover:bg-blue-800 text-white font-semibold">
+            <a
+              href="/players"
+              className="px-3 py-2 rounded-md bg-neutral-200 hover:bg-neutral-300 text-neutral-900 font-semibold"
+            >
+              Players
+            </a>
+            <a
+              href="/events/new"
+              className="px-3 py-2 rounded-md bg-blue-700 hover:bg-blue-800 text-white font-semibold"
+            >
               New event
             </a>
-            <button onClick={signOut} className="px-3 py-2 rounded-md bg-neutral-900 hover:bg-black text-white font-semibold">
+            <button
+              onClick={signOut}
+              className="px-3 py-2 rounded-md bg-neutral-900 hover:bg-black text-white font-semibold"
+            >
               Sign out
             </button>
           </div>
