@@ -26,11 +26,11 @@ export default function PlayersPage() {
 
   useEffect(() => {
     (async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('players')
         .select('id, first_name, last_name, preferred_name, jersey_no, status')
         .order('last_name', { ascending: true });
-      setPlayers(data || []);
+      setPlayers(error ? [] : (data || []));
       setLoading(false);
     })();
   }, []);
@@ -87,24 +87,29 @@ export default function PlayersPage() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map(p => (
-                <tr key={p.id} className="border-b border-neutral-100 hover:bg-neutral-50">
-                  <td className="p-3">
-                    <Link href={`/players/${p.id}`} className="underline text-blue-700 hover:text-blue-800">
-                      {p.preferred_name || `${p.first_name} ${p.last_name}`}
-                    </Link>
-                  </td>
-                  <td className="p-3">{p.jersey_no ?? '—'}</td>
-                  <td className="p-3">{p.status || 'active'}</td>
-                  <td className="p-3">
-                    <Link href={`/players/${p.id}/edit`} className="underline text-blue-700 hover:text-blue-800">
-                      Edit
-                    </Link>
-                  </td>
-                </tr>
-              ))}
+              {filtered.map(p => {
+                const display = p.preferred_name || `${p.first_name} ${p.last_name}`;
+                return (
+                  <tr key={p.id} className="border-b border-neutral-100 hover:bg-neutral-50">
+                    <td className="p-3">
+                      <Link href={`/players/${p.id}`} className="underline text-blue-700 hover:text-blue-800">
+                        {display}
+                      </Link>
+                    </td>
+                    <td className="p-3">{p.jersey_no ?? '—'}</td>
+                    <td className="p-3">{p.status || 'active'}</td>
+                    <td className="p-3">
+                      <Link href={`/players/${p.id}/edit`} className="underline text-blue-700 hover:text-blue-800">
+                        Edit
+                      </Link>
+                    </td>
+                  </tr>
+                );
+              })}
               {filtered.length === 0 && (
-                <tr><td className="p-4 text-neutral-700" colSpan={4}>No players.</td></tr>
+                <tr>
+                  <td className="p-4 text-neutral-700" colSpan={4}>No players.</td>
+                </tr>
               )}
             </tbody>
           </table>
