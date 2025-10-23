@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
 
@@ -11,6 +11,15 @@ const supabase = createClient(
 
 type Team = { id: string; name: string };
 
+function pad(n: number) { return String(n).padStart(2, '0'); }
+function toDateInput(d: Date) { return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
+function toTimeInput(d: Date) { return `${pad(d.getHours())}:${pad(d.getMinutes())}`; }
+function fromLocalDateTime(dateStr: string, timeStr: string) {
+  // dateStr: yyyy-mm-dd, timeStr: HH:MM
+  return new Date(`${dateStr}T${timeStr}:00`);
+}
+function addMinutes(d: Date, mins: number) { return new Date(d.getTime() + mins*60*1000); }
+
 export default function NewEventPage() {
   const router = useRouter();
   const [teams, setTeams] = useState<Team[]>([]);
@@ -18,9 +27,15 @@ export default function NewEventPage() {
   const [type, setType] = useState<'training'|'game'|'tournament'>('training');
   const [title, setTitle] = useState('');
   const [location, setLocation] = useState('');
-  const [startsAt, setStartsAt] = useState('');
-  const [endsAt, setEndsAt] = useState('');
+
+  // start/end split inputs
+  const now = useMemo(() => new Date(), []);
+  const [startDate, setStartDate] = useState(toDateInput(now));
+  const [startTime, setStartTime] = useState('17:00');
+  const [endDate, setEndDate] = useState(toDateInput(addMinutes(now, 90)));
+  const [endTime, setEndTime] = useState('18:30');
   const [msg, setMsg] = useState<string | null>(null);
+  const [duration, setDuration] = useState(90); // minutes
 
   useEffect(() => {
     (async () => {
@@ -31,29 +46,48 @@ export default function NewEventPage() {
     })();
   }, [router]);
 
-  function onStartChange(v: string) {
-    setStartsAt(v);
-    if (!endsAt) {
-      const start = new Date(v);
-      const end = new Date(start.getTime() + 90 * 60 * 1000);
-      setEndsAt(end.toISOString().slice(0,16)); // yyyy-MM-ddTHH:mm
-    }
+  // when start or duration changes, auto-set end
+  useEffect(() => {
+    const s = fromLocalDateTime(startDate, startTime);
+    const e = addMinutes(s, duration);
+    setEndDate(toDateInput(e));
+    setEndTime(toTimeInput(e));
+  }, [startDate, startTime, duration]);
+
+  // quick set helpers
+  function setPreset(hour: number, minute = 0) {
+    setStartTime(`${pad(hour)}:${pad(minute)}`);
+  }
+  function setNextDayPreset(hour: number, minute = 0) {
+    const d = new Date(fromLocalDateTime(startDate, startTime));
+    d.setDate(d.getDate() + 1);
+    setStartDate(toDateInput(d));
+    setStartTime(`${pad(hour)}:${pad(minute)}`);
   }
 
   async function createEvent(e: React.FormEvent) {
     e.preventDefault();
     setMsg(null);
 
-    if (!startsAt || !endsAt) { setMsg('Error: start and end are required.'); return; }
-    if (new Date(endsAt) <= new Date(startsAt)) { setMsg('Error: End must be after start.'); return; }
+    const starts = fromLocalDateTime(startDate, startTime);
+    const ends = fromLocalDateTime(endDate, endTime);
+
+    if (!(startDate && startTime && endDate && endTime)) {
+      setMsg('Error: start and end are required.');
+      return;
+    }
+    if (ends <= starts) {
+      setMsg('Error: End must be after start.');
+      return;
+    }
 
     const { error } = await supabase.from('events').insert({
       team_id: teamId || null,
       type,
       title: title || null,
       location: location || null,
-      starts_at: new Date(startsAt).toISOString(),
-      ends_at: new Date(endsAt).toISOString(),
+      starts_at: starts.toISOString(),
+      ends_at: ends.toISOString(),
     });
 
     if (error) { setMsg(`Error: ${error.message}`); return; }
@@ -66,6 +100,7 @@ export default function NewEventPage() {
         <h1 className="text-3xl font-extrabold tracking-tight">Create Event</h1>
 
         <form onSubmit={createEvent} className="space-y-4">
+
           <label className="block text-sm font-medium">
             Team
             <select
@@ -107,23 +142,75 @@ export default function NewEventPage() {
             />
           </label>
 
-          <label className="block text-sm font-medium">
-            Start
-            <input
-              type="datetime-local" required
-              className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white text-neutral-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
-              value={startsAt} onChange={e=>onStartChange(e.target.value)}
-            />
-          </label>
+          {/* Start pickers */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <label className="block text-sm font-medium">
+              Start date
+              <input
+                type="date" required value={startDate}
+                onChange={e=>setStartDate(e.target.value)}
+                className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white text-neutral-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+              />
+            </label>
+            <label className="block text-sm font-medium">
+              Start time
+              <input
+                type="time" required value={startTime}
+                onChange={e=>setStartTime(e.target.value)}
+                className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white text-neutral-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+              />
+            </label>
+          </div>
 
-          <label className="block text-sm font-medium">
-            End
-            <input
-              type="datetime-local" required
-              className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white text-neutral-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
-              value={endsAt} onChange={e=>setEndsAt(e.target.value)}
-            />
-          </label>
+          {/* Quick time presets */}
+          <div className="flex flex-wrap gap-2">
+            <span className="text-sm font-medium mr-1">Quick start:</span>
+            <button type="button" className="btn btn-primary"
+              onClick={()=>setPreset(16,0)}>Today 4:00p</button>
+            <button type="button" className="btn btn-primary"
+              onClick={()=>setPreset(17,0)}>Today 5:00p</button>
+            <button type="button" className="btn btn-primary"
+              onClick={()=>setPreset(18,0)}>Today 6:00p</button>
+            <button type="button" className="btn"
+              onClick={()=>setNextDayPreset(17,0)}>Tomorrow 5:00p</button>
+          </div>
+
+          {/* Duration presets */}
+          <div className="flex flex-wrap gap-2 items-center">
+            <span className="text-sm font-medium">Duration:</span>
+            {[60, 75, 90, 105, 120].map(min => (
+              <button
+                key={min}
+                type="button"
+                onClick={()=>setDuration(min)}
+                className={`px-3 py-1 rounded border ${
+                  duration===min ? 'bg-blue-700 text-white border-blue-700' : 'bg-white text-neutral-900 border-neutral-300'
+                }`}
+              >
+                {min}m
+              </button>
+            ))}
+          </div>
+
+          {/* End pickers (editable) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <label className="block text-sm font-medium">
+              End date
+              <input
+                type="date" required value={endDate}
+                onChange={e=>setEndDate(e.target.value)}
+                className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white text-neutral-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+              />
+            </label>
+            <label className="block text-sm font-medium">
+              End time
+              <input
+                type="time" required value={endTime}
+                onChange={e=>setEndTime(e.target.value)}
+                className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white text-neutral-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+              />
+            </label>
+          </div>
 
           <button type="submit" className="w-full bg-blue-700 hover:bg-blue-800 text-white rounded-md px-3 py-2 font-semibold">
             Save
