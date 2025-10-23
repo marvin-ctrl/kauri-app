@@ -1,28 +1,16 @@
-import type { Metadata } from "next";
-import { Inter, Roboto_Mono } from "next/font/google";
-import "./globals.css";
+import './globals.css';
+import Nav from './components/Nav';
 
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-geist-sans",
-});
-
-const robotoMono = Roboto_Mono({
-  subsets: ["latin"],
-  variable: "--font-geist-mono",
-});
-
-export const metadata: Metadata = {
-  title: "Kauri Futsal",
-  description: "V1 MVP",
+export const metadata = {
+  title: 'Kauri',
+  description: 'Futsal ops',
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{ children: React.ReactNode }>) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <body className={`${inter.variable} ${robotoMono.variable} antialiased`}>
+    <html lang="en" className="h-full">
+      <body className="min-h-screen bg-neutral-50 text-neutral-900">
+        <Nav />
         {children}
       </body>
     </html>
