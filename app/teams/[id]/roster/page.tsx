@@ -8,32 +8,49 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-type Row = {
-  id: string; // team_players.id
-  player_id: string;
-  role: string;
-  players: { first_name: string; last_name: string; preferred_name: string | null; jersey_no: number | null } | null;
-};
 type Team = { id: string; name: string };
+type Tp = { id: string; player_id: string; role: string | null };
+type Player = {
+  id: string;
+  first_name: string;
+  last_name: string;
+  preferred_name: string | null;
+  jersey_no: number | null;
+};
 
 export default function TeamRosterPage() {
   const { id: teamId } = useParams<{ id: string }>();
   const [team, setTeam] = useState<Team | null>(null);
-  const [rows, setRows] = useState<Row[]>([]);
+  const [rows, setRows] = useState<Array<{ tp: Tp; player: Player | null }>>([]);
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState<string | null>(null);
 
   async function load() {
     setMsg(null);
+
+    // 1) team
     const t = await supabase.from('teams').select('id,name').eq('id', teamId).maybeSingle();
+
+    // 2) memberships (no join)
     const tp = await supabase
       .from('team_players')
-      .select('id, player_id, role, players(first_name,last_name,preferred_name,jersey_no)')
+      .select('id, player_id, role')
       .eq('team_id', teamId)
       .order('created_at', { ascending: true });
 
+    // 3) fetch players with IN()
+    let map = new Map<string, Player>();
+    if (tp.data && tp.data.length > 0) {
+      const ids = Array.from(new Set(tp.data.map(r => r.player_id)));
+      const players = await supabase
+        .from('players')
+        .select('id, first_name, last_name, preferred_name, jersey_no')
+        .in('id', ids);
+      (players.data || []).forEach(p => map.set(p.id, p));
+    }
+
     setTeam(t.data || null);
-    setRows((tp.data as any) || []);
+    setRows((tp.data || []).map(r => ({ tp: r, player: map.get(r.player_id) || null })));
   }
 
   useEffect(() => { (async () => { await load(); setLoading(false); })(); }, [teamId]);
@@ -55,7 +72,9 @@ export default function TeamRosterPage() {
             <h1 className="text-3xl font-extrabold tracking-tight">{team?.name || 'Team'}</h1>
             <p className="text-sm text-neutral-700">Roster</p>
           </div>
-          <a href="/teams" className="px-3 py-2 rounded-md bg-neutral-200 hover:bg-neutral-300 text-neutral-900 font-semibold">Back to Teams</a>
+          <a href="/teams" className="px-3 py-2 rounded-md bg-neutral-200 hover:bg-neutral-300 text-neutral-900 font-semibold">
+            Back to Teams
+          </a>
         </header>
 
         <section className="bg-white border border-neutral-200 rounded-xl shadow-sm p-6">
@@ -63,19 +82,20 @@ export default function TeamRosterPage() {
             <p className="text-neutral-700">No players on this team.</p>
           ) : (
             <ul className="space-y-2">
-              {rows.map(r => {
-                const p = r.players;
-                const name = p?.preferred_name || `${p?.first_name || ''} ${p?.last_name || ''}`.trim();
+              {rows.map(({ tp, player }) => {
+                const name = player?.preferred_name || `${player?.first_name || ''} ${player?.last_name || ''}`.trim();
                 return (
-                  <li key={r.id} className="flex items-center justify-between border border-neutral-200 rounded-md p-3">
+                  <li key={tp.id} className="flex items-center justify-between border border-neutral-200 rounded-md p-3">
                     <div className="text-sm">
                       <span className="font-semibold">{name || 'Player'}</span>
-                      {p?.jersey_no != null && <span className="ml-2 text-neutral-700">#{p.jersey_no}</span>}
-                      {r.role && r.role !== 'player' && <span className="ml-2 text-neutral-700">• {r.role}</span>}
+                      {player?.jersey_no != null && <span className="ml-2 text-neutral-700">#{player.jersey_no}</span>}
+                      {tp.role && tp.role !== 'player' && <span className="ml-2 text-neutral-700">• {tp.role}</span>}
                     </div>
                     <div className="flex items-center gap-2">
-                      <a href={`/players/${r.player_id}`} className="text-sm underline text-blue-700 hover:text-blue-800">Profile</a>
-                      <button onClick={() => remove(r.id)} className="px-2 py-1 rounded bg-red-700 hover:bg-red-800 text-white text-xs">
+                      {player?.id && (
+                        <a href={`/players/${player.id}`} className="text-sm underline text-blue-700 hover:text-blue-800">Profile</a>
+                      )}
+                      <button onClick={() => remove(tp.id)} className="px-2 py-1 rounded bg-red-700 hover:bg-red-800 text-white text-xs">
                         Remove
                       </button>
                     </div>
