@@ -5,64 +5,153 @@ import { useParams } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
 type Team = { id: string; name: string };
-type Tp = { id: string; player_id: string; role: string | null };
-type Player = {
-  id: string;
-  first_name: string;
-  last_name: string;
-  preferred_name: string | null;
-  jersey_no: number | null;
+type RosterRow = {
+  membershipId: string;
+  playerId: string;
+  firstName: string;
+  lastName: string;
+  preferredName: string | null;
+  jerseyNo: number | null;
+  role: string;
 };
 
 export default function TeamRosterPage() {
   const { id: teamId } = useParams<{ id: string }>();
   const [team, setTeam] = useState<Team | null>(null);
-  const [rows, setRows] = useState<Array<{ tp: Tp; player: Player | null }>>([]);
+  const [roster, setRoster] = useState<RosterRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState<string | null>(null);
 
   async function load() {
     setMsg(null);
+    setLoading(true);
 
-    // 1) team
-    const t = await supabase.from('teams').select('id,name').eq('id', teamId).maybeSingle();
+    try {
+      // 1. Get team info
+      const { data: teamData } = await supabase
+        .from('teams')
+        .select('id, name')
+        .eq('id', teamId)
+        .maybeSingle();
+      
+      setTeam(teamData || null);
 
-    // 2) memberships (no join)
-    const tp = await supabase
-      .from('team_players')
-      .select('id, player_id, role')
-      .eq('team_id', teamId)
-      .order('created_at', { ascending: true });
+      // 2. Get current term from localStorage
+      const termId = localStorage.getItem('kauri.termId');
+      if (!termId) {
+        setMsg('Please select a term in the header.');
+        setLoading(false);
+        return;
+      }
 
-    // 3) fetch players with IN()
-    let map = new Map<string, Player>();
-    if (tp.data && tp.data.length > 0) {
-      const ids = Array.from(new Set(tp.data.map(r => r.player_id)));
-      const players = await supabase
+      // 3. Get team_terms row for this team + term
+      const { data: teamTerm } = await supabase
+        .from('team_terms')
+        .select('id')
+        .eq('team_id', teamId)
+        .eq('term_id', termId)
+        .maybeSingle();
+
+      if (!teamTerm) {
+        // No team_terms means no players assigned yet for this term
+        setRoster([]);
+        setLoading(false);
+        return;
+      }
+
+      // 4. Get all memberships for this team_term
+      const { data: memberships } = await supabase
+        .from('memberships')
+        .select('id, player_term_id, role')
+        .eq('team_term_id', teamTerm.id);
+
+      if (!memberships || memberships.length === 0) {
+        setRoster([]);
+        setLoading(false);
+        return;
+      }
+
+      // 5. Get player_terms for these memberships
+      const playerTermIds = memberships.map(m => m.player_term_id);
+      const { data: playerTerms } = await supabase
+        .from('player_terms')
+        .select('id, player_id')
+        .in('id', playerTermIds);
+
+      if (!playerTerms || playerTerms.length === 0) {
+        setRoster([]);
+        setLoading(false);
+        return;
+      }
+
+      // 6. Get actual player data
+      const playerIds = playerTerms.map(pt => pt.player_id);
+      const { data: players } = await supabase
         .from('players')
         .select('id, first_name, last_name, preferred_name, jersey_no')
-        .in('id', ids);
-      (players.data || []).forEach(p => map.set(p.id, p));
-    }
+        .in('id', playerIds);
 
-    setTeam(t.data || null);
-    setRows((tp.data || []).map(r => ({ tp: r, player: map.get(r.player_id) || null })));
+      // 7. Build roster by combining everything
+      const playerMap = new Map(players?.map(p => [p.id, p]) || []);
+      const playerTermMap = new Map(playerTerms.map(pt => [pt.id, pt.player_id]));
+
+      const rosterData: RosterRow[] = memberships
+        .map(m => {
+          const playerId = playerTermMap.get(m.player_term_id);
+          if (!playerId) return null;
+          
+          const player = playerMap.get(playerId);
+          if (!player) return null;
+
+          return {
+            membershipId: m.id,
+            playerId: player.id,
+            firstName: player.first_name,
+            lastName: player.last_name,
+            preferredName: player.preferred_name,
+            jerseyNo: player.jersey_no,
+            role: m.role || 'player'
+          };
+        })
+        .filter((row): row is RosterRow => row !== null);
+
+      setRoster(rosterData);
+      setLoading(false);
+    } catch (err: any) {
+      setMsg(`Error: ${err?.message || 'Failed to load roster'}`);
+      setLoading(false);
+    }
   }
 
-  useEffect(() => { (async () => { await load(); setLoading(false); })(); }, [teamId]);
+  useEffect(() => {
+    load();
+  }, [teamId]);
 
-  async function remove(teamPlayerId: string) {
+  async function remove(membershipId: string) {
     setMsg(null);
-    const { error } = await supabase.from('team_players').delete().eq('id', teamPlayerId);
-    if (error) { setMsg(`Error: ${error.message}`); return; }
+    if (!confirm('Remove this player from the team?')) return;
+    
+    const { error } = await supabase
+      .from('memberships')
+      .delete()
+      .eq('id', membershipId);
+    
+    if (error) {
+      setMsg(`Error: ${error.message}`);
+      return;
+    }
+    
     await load();
   }
 
-  if (loading) return <main className="min-h-screen grid place-items-center">Loading…</main>;
+  if (loading) {
+    return <main className="min-h-screen grid place-items-center">Loading…</main>;
+  }
 
   return (
     <main className="min-h-screen p-6">
@@ -72,30 +161,62 @@ export default function TeamRosterPage() {
             <h1 className="text-3xl font-extrabold tracking-tight">{team?.name || 'Team'}</h1>
             <p className="text-sm text-neutral-700">Roster</p>
           </div>
-          <a href="/teams" className="px-3 py-2 rounded-md bg-neutral-200 hover:bg-neutral-300 text-neutral-900 font-semibold">
-            Back to Teams
-          </a>
+          <div className="flex gap-2">
+            <a
+              href={`/teams/${teamId}/assign`}
+              className="px-3 py-2 rounded-md bg-blue-700 hover:bg-blue-800 text-white font-semibold"
+            >
+              Add players
+            </a>
+            <a
+              href="/teams"
+              className="px-3 py-2 rounded-md bg-neutral-200 hover:bg-neutral-300 text-neutral-900 font-semibold"
+            >
+              Back to Teams
+            </a>
+          </div>
         </header>
 
         <section className="bg-white border border-neutral-200 rounded-xl shadow-sm p-6">
-          {rows.length === 0 ? (
-            <p className="text-neutral-700">No players on this team.</p>
+          {roster.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-neutral-700 mb-4">No players on this team for the current term.</p>
+              <a
+                href={`/teams/${teamId}/assign`}
+                className="inline-block px-4 py-2 rounded-md bg-blue-700 hover:bg-blue-800 text-white font-semibold"
+              >
+                Add players
+              </a>
+            </div>
           ) : (
             <ul className="space-y-2">
-              {rows.map(({ tp, player }) => {
-                const name = player?.preferred_name || `${player?.first_name || ''} ${player?.last_name || ''}`.trim();
+              {roster.map((row) => {
+                const name = row.preferredName || `${row.firstName} ${row.lastName}`;
                 return (
-                  <li key={tp.id} className="flex items-center justify-between border border-neutral-200 rounded-md p-3">
+                  <li
+                    key={row.membershipId}
+                    className="flex items-center justify-between border border-neutral-200 rounded-md p-3 hover:bg-neutral-50"
+                  >
                     <div className="text-sm">
-                      <span className="font-semibold">{name || 'Player'}</span>
-                      {player?.jersey_no != null && <span className="ml-2 text-neutral-700">#{player.jersey_no}</span>}
-                      {tp.role && tp.role !== 'player' && <span className="ml-2 text-neutral-700">• {tp.role}</span>}
+                      <span className="font-semibold">{name}</span>
+                      {row.jerseyNo != null && (
+                        <span className="ml-2 text-neutral-700">#{row.jerseyNo}</span>
+                      )}
+                      {row.role && row.role !== 'player' && (
+                        <span className="ml-2 text-neutral-700">• {row.role}</span>
+                      )}
                     </div>
                     <div className="flex items-center gap-2">
-                      {player?.id && (
-                        <a href={`/players/${player.id}`} className="text-sm underline text-blue-700 hover:text-blue-800">Profile</a>
-                      )}
-                      <button onClick={() => remove(tp.id)} className="px-2 py-1 rounded bg-red-700 hover:bg-red-800 text-white text-xs">
+                      <a
+                        href={`/players/${row.playerId}`}
+                        className="text-sm underline text-blue-700 hover:text-blue-800"
+                      >
+                        Profile
+                      </a>
+                      <button
+                        onClick={() => remove(row.membershipId)}
+                        className="px-2 py-1 rounded bg-red-700 hover:bg-red-800 text-white text-xs"
+                      >
                         Remove
                       </button>
                     </div>
