@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
 import { useCallback } from 'react';
+import TermSwitcher from './TermSwitcher';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -34,14 +35,23 @@ export default function Nav() {
   return (
     <nav className="w-full border-b border-neutral-200 bg-white">
       <div className="max-w-6xl mx-auto flex items-center justify-between p-3 gap-3">
-        <Link href="/dashboard" className="text-lg font-extrabold tracking-tight text-neutral-900">
-          Kauri
-        </Link>
+        {/* left: brand + links */}
+        <div className="flex items-center gap-3">
+          <Link href="/dashboard" className="text-lg font-extrabold tracking-tight text-neutral-900">
+            Kauri
+          </Link>
+          <div className="flex items-center gap-2">
+            <NavLink href="/dashboard" label="Dashboard" />
+            <NavLink href="/players" label="Players" />
+            <NavLink href="/teams" label="Teams" />
+            <NavLink href="/terms" label="Terms" />
+            <NavLink href="/events/new" label="New event" />
+          </div>
+        </div>
+
+        {/* right: term switcher + sign out */}
         <div className="flex items-center gap-2">
-          <NavLink href="/dashboard" label="Dashboard" />
-          <NavLink href="/players" label="Players" />
-          <NavLink href="/teams" label="Teams" />
-          <NavLink href="/events/new" label="New event" />
+          <TermSwitcher />
           <button
             onClick={signOut}
             className="px-3 py-2 rounded-md text-sm font-semibold bg-neutral-900 text-white hover:bg-black"
