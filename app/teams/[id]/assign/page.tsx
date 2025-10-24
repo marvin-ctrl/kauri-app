@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
 
@@ -9,362 +9,203 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-type PlayerRow = {
-  player_term_id: string | null;
-  player_id: string;
-  first_name: string;
-  last_name: string;
-  preferred_name: string | null;
-  jersey_no: number | null;
-  status: 'registered';
-};
+type Team = { id: string; name: string };
 
-export default function AssignPlayersToTeamPage() {
-  const { id: teamId } = useParams<{ id: string }>();
+export default function AssignPlayerToTeamsPage() {
   const router = useRouter();
+  const { id: playerId } = useParams<{ id: string }>();
 
-  const [teamName, setTeamName] = useState<string>('');
-  const [teamTermId, setTeamTermId] = useState<string | null>(null);
-  const [players, setPlayers] = useState<PlayerRow[]>([]);
-  const [selected, setSelected] = useState<Set<string>>(new Set()); // set of player_term_id
-  const [q, setQ] = useState('');
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [role, setRole] = useState<'player' | 'captain'>('player');
+  const [joinedAt, setJoinedAt] = useState<string>('');
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
-  // quick-add form
-  const [showAdd, setShowAdd] = useState(false);
-  const [fn, setFn] = useState('');
-  const [ln, setLn] = useState('');
-  const [pn, setPn] = useState('');
-  const [dob, setDob] = useState('');
-  const [jn, setJn] = useState<string>('');
-  const [adding, setAdding] = useState(false);
-
   useEffect(() => {
     (async () => {
-      setMsg(null);
-      const termId = localStorage.getItem('kauri.termId');
-      if (!termId) { setMsg('Select a term in the header.'); return; }
-
-      // team label
-      const t = await supabase.from('teams').select('name').eq('id', teamId).maybeSingle();
-      setTeamName(t.data?.name || 'Team');
-
-      // ensure team_terms exists
-      const tt = await supabase
-        .from('team_terms')
-        .select('id')
-        .eq('team_id', String(teamId))
-        .eq('term_id', termId)
-        .maybeSingle();
-
-      let ttId = tt.data?.id as string | undefined;
-      if (!ttId) {
-        const ins = await supabase
-          .from('team_terms')
-          .insert({ team_id: String(teamId), term_id: termId })
-          .select('id')
-          .single();
-        if (ins.error || !ins.data) { setMsg(ins.error?.message || 'Failed to create team shell'); return; }
-        ttId = ins.data.id;
-      }
-      setTeamTermId(ttId!);
-
-      // load all players
-      const all = await supabase
-        .from('players')
-        .select('id, first_name, last_name, preferred_name, jersey_no')
-        .order('first_name');
-
-      const allPlayers = all.data || [];
-
-      // load player_terms for term
-      const existingPT = await supabase
-        .from('player_terms')
-        .select('id, player_id')
-        .eq('term_id', termId);
-
-      const havePT = new Map<string, string>(); // player_id -> player_term_id
-      (existingPT.data || []).forEach(r => havePT.set(r.player_id as string, r.id as string));
-
-      // auto-register missing players to this term
-      const missing = allPlayers.filter(p => !havePT.has(p.id));
-      while (missing.length) {
-        const batch = missing.splice(0, 200).map(p => ({
-          player_id: p.id, term_id: termId, status: 'registered'
-        }));
-        if (batch.length) {
-          const ins = await supabase.from('player_terms').insert(batch).select('id, player_id');
-          if (ins.error) { setMsg(`Error registering players: ${ins.error.message}`); return; }
-          (ins.data || []).forEach((r: any) => havePT.set(r.player_id, r.id));
-        }
-      }
-
-      // build list
-      const list: PlayerRow[] = allPlayers.map((p: any) => ({
-        player_term_id: havePT.get(p.id) || null,
-        player_id: p.id,
-        first_name: p.first_name,
-        last_name: p.last_name,
-        preferred_name: p.preferred_name,
-        jersey_no: p.jersey_no,
-        status: 'registered'
-      }));
-      setPlayers(list);
-
-      // pre-select existing memberships
-      const cur = await supabase
-        .from('memberships')
-        .select('player_term_id')
-        .eq('team_term_id', ttId!);
-      const pre = new Set((cur.data || []).map(r => r.player_term_id as string));
-      setSelected(pre);
+      const { data } = await supabase.from('teams').select('id,name').order('name');
+      setTeams(data || []);
     })();
-  }, [teamId]);
+  }, []);
 
-  const filtered = useMemo(() => {
-    const t = q.trim().toLowerCase();
-    return players.filter(p => {
-      if (!t) return true;
-      const name = `${p.first_name} ${p.last_name} ${p.preferred_name || ''}`.toLowerCase();
-      return name.includes(t) || String(p.jersey_no ?? '').includes(t);
-    });
-  }, [players, q]);
-
-  function toggle(ptid: string) {
+  function toggle(teamId: string) {
     const next = new Set(selected);
-    if (next.has(ptid)) next.delete(ptid); else next.add(ptid);
+    if (next.has(teamId)) next.delete(teamId);
+    else next.add(teamId);
     setSelected(next);
   }
 
-  function toggleAll(ids: string[], on: boolean) {
-    const next = new Set(selected);
-    ids.forEach(id => on ? next.add(id) : next.delete(id));
-    setSelected(next);
-  }
-
-  async function save() {
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
     setMsg(null);
-    const termId = localStorage.getItem('kauri.termId');
-    if (!termId) { setMsg('Select a term in the header.'); return; }
-    if (!teamTermId) { setMsg('Missing team-term. Reload.'); return; }
+    if (selected.size === 0) { setMsg('Select at least one team.'); return; }
 
     setSaving(true);
     try {
-      // current memberships for this team-term
-      const cur = await supabase
-        .from('memberships')
-        .select('player_term_id')
-        .eq('team_term_id', teamTermId);
-      const current = new Set((cur.data || []).map(r => r.player_term_id as string));
+      const termId = typeof window !== 'undefined' ? localStorage.getItem('kauri.termId') : null;
+      if (!termId) { setMsg('Select a term in the header.'); setSaving(false); return; }
 
-      // add = selected - current
-      const toAdd = Array.from(selected)
-        .filter(id => !current.has(id))
-        .map(id => ({ player_term_id: id, team_term_id: teamTermId, role: 'player' }));
-
-      // remove = current - selected
-      const toRemove = Array.from(current)
-        .filter(id => !selected.has(id));
-
-      if (toAdd.length) {
-        const { error } = await supabase.from('memberships').insert(toAdd);
-        if (error) throw error;
-      }
-      if (toRemove.length) {
-        const { error } = await supabase.from('memberships')
-          .delete().in('player_term_id', toRemove).eq('team_term_id', teamTermId);
-        if (error) throw error;
-      }
-
-      setSaving(false);
-      router.replace(`/teams/${teamId}/roster`);
-    } catch (e: any) {
-      setSaving(false);
-      setMsg(`Error: ${e?.message || 'Failed to save'}`);
-    }
-  }
-
-  async function addPlayerQuick(e: React.FormEvent) {
-    e.preventDefault();
-    setMsg(null);
-    const termId = localStorage.getItem('kauri.termId');
-    if (!termId) { setMsg('Select a term in the header.'); return; }
-    const first = fn.trim();
-    const last = ln.trim();
-    if (!first || !last) { setMsg('First and last name are required.'); return; }
-
-    setAdding(true);
-    try {
-      // 1) create player
-      const payload: any = {
-        first_name: first,
-        last_name: last,
-        preferred_name: pn.trim() || null,
-        jersey_no: jn ? Number(jn) : null,
-        dob: dob || null
-      };
-      const p = await supabase.from('players').insert(payload).select('id, first_name, last_name, preferred_name, jersey_no').single();
-      if (p.error || !p.data) throw p.error || new Error('Create player failed');
-
-      // 2) ensure player_terms for current term
+      // ensure player_terms row
       const pt = await supabase
         .from('player_terms')
-        .insert({ player_id: p.data.id, term_id: termId, status: 'registered' })
         .select('id')
-        .single();
-      if (pt.error || !pt.data) throw pt.error || new Error('Register player failed');
+        .eq('player_id', String(playerId))
+        .eq('term_id', termId)
+        .maybeSingle();
 
-      // 3) update UI list and select
-      const row: PlayerRow = {
-        player_term_id: pt.data.id,
-        player_id: p.data.id,
-        first_name: p.data.first_name,
-        last_name: p.data.last_name,
-        preferred_name: p.data.preferred_name,
-        jersey_no: p.data.jersey_no,
-        status: 'registered'
-      };
-      setPlayers(prev => [row, ...prev]);
-      setSelected(prev => {
-        const next = new Set(prev);
-        next.add(pt.data.id);
-        return next;
-      });
+      let playerTermId = pt.data?.id as string | undefined;
+      if (!playerTermId) {
+        const ins = await supabase
+          .from('player_terms')
+          .insert({ player_id: String(playerId), term_id: termId, status: 'registered' })
+          .select('id')
+          .single();
+        if (ins.error || !ins.data) throw ins.error || new Error('Failed to create player_terms');
+        playerTermId = ins.data.id;
+      }
 
-      // 4) reset form
-      setFn(''); setLn(''); setPn(''); setDob(''); setJn(''); setShowAdd(false);
-      setAdding(false);
+      // ensure team_terms rows for each selected team
+      const teamIds = Array.from(selected);
+      const teamTermIds: string[] = [];
+      for (const team_id of teamIds) {
+        const tt = await supabase
+          .from('team_terms')
+          .select('id')
+          .eq('team_id', team_id)
+          .eq('term_id', termId)
+          .maybeSingle();
+        if (tt.data?.id) {
+          teamTermIds.push(tt.data.id);
+        } else {
+          const ins = await supabase
+            .from('team_terms')
+            .insert({ team_id, term_id: termId })
+            .select('id')
+            .single();
+          if (ins.error || !ins.data) throw ins.error || new Error('Failed to create team_terms');
+          teamTermIds.push(ins.data.id);
+        }
+      }
+
+      // insert memberships if missing
+      const existing = await supabase
+        .from('memberships')
+        .select('team_term_id')
+        .eq('player_term_id', playerTermId);
+
+      const existingSet = new Set((existing.data || []).map(r => r.team_term_id));
+      const rows = teamTermIds
+        .filter(ttid => !existingSet.has(ttid))
+        .map(ttid => ({
+          player_term_id: playerTermId!,
+          team_term_id: ttid,
+          role,
+        }));
+
+      if (rows.length) {
+        const { error } = await supabase.from('memberships').insert(rows);
+        if (error) { setMsg(`Error: ${error.message}`); setSaving(false); return; }
+      }
+
+      // optional joined date on player_terms
+      if (joinedAt) {
+        await supabase
+          .from('player_terms')
+          .update({ registered_at: joinedAt })
+          .eq('id', playerTermId);
+      }
+
+      setSaving(false);
+      router.replace(`/players/${playerId}`);
     } catch (err: any) {
-      setAdding(false);
-      setMsg(`Error: ${err?.message || 'Failed to add player'}`);
+      setSaving(false);
+      setMsg(`Error: ${err?.message || 'Failed to assign'}`);
     }
   }
 
   return (
     <main className="min-h-screen bg-neutral-50 text-neutral-900 p-6">
-      <div className="max-w-4xl mx-auto bg-white border border-neutral-200 rounded-xl shadow-sm p-6 space-y-5">
+      <div className="max-w-2xl mx-auto bg-white border border-neutral-200 rounded-xl shadow-sm p-6 space-y-6">
         <header className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-extrabold tracking-tight">Assign players</h1>
-            <p className="text-sm text-neutral-700">{teamName}</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <a href={`/teams/${teamId}/roster`} className="px-3 py-2 rounded-md bg-neutral-200 hover:bg-neutral-300 text-neutral-900 font-semibold">Cancel</a>
-            <button onClick={save} disabled={saving || !teamTermId}
-              className="px-3 py-2 rounded-md bg-blue-700 hover:bg-blue-800 text-white font-semibold disabled:opacity-60">
-              {saving ? 'Saving…' : 'Save changes'}
-            </button>
-          </div>
+          <h1 className="text-3xl font-extrabold tracking-tight">Assign to teams</h1>
+          <a
+            href={`/players/${playerId}`}
+            className="px-3 py-2 rounded-md bg-neutral-200 hover:bg-neutral-300 text-neutral-900 font-semibold"
+          >
+            Cancel
+          </a>
         </header>
 
-        {/* Quick add player */}
-        <section className="border border-neutral-200 rounded-lg p-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-bold">Quick add player</h2>
-            <button
-              onClick={() => setShowAdd(s => !s)}
-              className="text-sm underline text-blue-700"
-              type="button"
-            >
-              {showAdd ? 'Hide' : 'Show'}
-            </button>
-          </div>
-          {showAdd && (
-            <form onSubmit={addPlayerQuick} className="mt-3 grid grid-cols-1 md:grid-cols-6 gap-3">
-              <input
-                required
-                placeholder="First name"
-                value={fn}
-                onChange={e=>setFn(e.target.value)}
-                className="border border-neutral-300 rounded-md px-3 py-2 bg-white md:col-span-2"
-              />
-              <input
-                required
-                placeholder="Last name"
-                value={ln}
-                onChange={e=>setLn(e.target.value)}
-                className="border border-neutral-300 rounded-md px-3 py-2 bg-white md:col-span-2"
-              />
-              <input
-                placeholder="Preferred name"
-                value={pn}
-                onChange={e=>setPn(e.target.value)}
-                className="border border-neutral-300 rounded-md px-3 py-2 bg-white md:col-span-2"
-              />
-              <input
-                type="date"
-                value={dob}
-                onChange={e=>setDob(e.target.value)}
-                className="border border-neutral-300 rounded-md px-3 py-2 bg-white md:col-span-2"
-                placeholder="DoB"
-              />
-              <input
-                type="number"
-                min={0}
-                placeholder="Jersey #"
-                value={jn}
-                onChange={e=>setJn(e.target.value)}
-                className="border border-neutral-300 rounded-md px-3 py-2 bg-white md:col-span-2"
-              />
-              <button
-                type="submit"
-                disabled={adding}
-                className="md:col-span-2 px-3 py-2 rounded-md bg-neutral-900 hover:bg-black text-white font-semibold disabled:opacity-60"
-              >
-                {adding ? 'Adding…' : 'Add player'}
-              </button>
-            </form>
-          )}
-        </section>
-
-        {/* Search + bulk select */}
-        <div className="flex flex-wrap gap-3 items-center">
-          <input
-            placeholder="Search by name or jersey…"
-            value={q}
-            onChange={e=>setQ(e.target.value)}
-            className="border border-neutral-300 rounded-md px-3 py-2 bg-white"
-          />
-          <button onClick={() => toggleAll(filtered.map(p=>p.player_term_id!).filter(Boolean), true)}
-            className="px-2 py-1 text-sm rounded bg-neutral-800 text-white">Select all (filtered)</button>
-          <button onClick={() => toggleAll(filtered.map(p=>p.player_term_id!).filter(Boolean), false)}
-            className="px-2 py-1 text-sm rounded bg-neutral-200">Clear all (filtered)</button>
-        </div>
-
-        {/* Table */}
-        <section className="border border-neutral-200 rounded-lg overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-neutral-100 border-b border-neutral-200">
-              <tr>
-                <th className="p-2 text-left">Add</th>
-                <th className="p-2 text-left">Name</th>
-                <th className="p-2 text-left">Jersey</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map(p => {
-                const name = p.preferred_name || `${p.first_name} ${p.last_name}`;
-                const ptid = p.player_term_id!;
-                const checked = selected.has(ptid);
+        <form onSubmit={onSubmit} className="space-y-5">
+          <fieldset className="border border-neutral-200 rounded-lg p-4">
+            <legend className="text-sm font-bold px-1">Teams</legend>
+            <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {teams.map(t => {
+                const checked = selected.has(t.id);
                 return (
-                  <tr key={ptid} className="border-b border-neutral-100 hover:bg-neutral-50">
-                    <td className="p-2">
-                      <input type="checkbox" checked={checked} onChange={()=>toggle(ptid)} />
-                    </td>
-                    <td className="p-2">{name}</td>
-                    <td className="p-2">{p.jersey_no ?? '—'}</td>
-                  </tr>
+                  <li key={t.id}>
+                    <label className="flex items-center gap-2 p-2 border border-neutral-200 rounded-md hover:bg-neutral-50">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => toggle(t.id)}
+                      />
+                      <span className="text-sm">{t.name}</span>
+                    </label>
+                  </li>
                 );
               })}
-              {filtered.length === 0 && (
-                <tr><td className="p-4 text-neutral-700" colSpan={3}>No players.</td></tr>
-              )}
-            </tbody>
-          </table>
-        </section>
+              {teams.length === 0 && <li className="text-sm text-neutral-700">No teams yet.</li>}
+            </ul>
+          </fieldset>
 
-        {msg && <p className="text-sm text-red-800">{msg}</p>}
+          <fieldset className="border border-neutral-200 rounded-lg p-4">
+            <legend className="text-sm font-bold px-1">Role</legend>
+            <div className="flex items-center gap-4">
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="role"
+                  value="player"
+                  checked={role === 'player'}
+                  onChange={() => setRole('player')}
+                />
+                <span className="text-sm">Player</span>
+              </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="role"
+                  value="captain"
+                  checked={role === 'captain'}
+                  onChange={() => setRole('captain')}
+                />
+                <span className="text-sm">Captain</span>
+              </label>
+            </div>
+          </fieldset>
+
+          <label className="block text-sm font-medium">
+            Registered date (optional)
+            <input
+              type="date"
+              value={joinedAt}
+              onChange={e => setJoinedAt(e.target.value)}
+              className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white"
+            />
+          </label>
+
+          <button
+            type="submit"
+            disabled={saving}
+            className="w-full bg-blue-700 hover:bg-blue-800 text-white rounded-md px-3 py-2 font-semibold disabled:opacity-60"
+          >
+            {saving ? 'Saving…' : 'Assign to selected teams'}
+          </button>
+
+          {msg && <div className={`text-sm ${msg.startsWith('Error') ? 'text-red-800' : 'text-green-800'}`}>{msg}</div>}
+        </form>
       </div>
     </main>
   );
