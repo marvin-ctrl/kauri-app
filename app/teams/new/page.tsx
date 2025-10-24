@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
 export default function NewTeamPage() {
@@ -17,18 +18,31 @@ export default function NewTeamPage() {
   async function save(e: React.FormEvent) {
     e.preventDefault();
     setMsg(null);
-    if (!name.trim()) { setMsg('Team name is required'); return; }
-    setSaving(true);
 
+    const trimmed = name.trim();
+    if (!trimmed) { setMsg('Team name is required.'); return; }
+
+    setSaving(true);
     const { data, error } = await supabase
       .from('teams')
-      .insert({ name: name.trim() })
+      .insert({ name: trimmed })
       .select('id')
       .single();
 
     setSaving(false);
-    if (error || !data) { setMsg(error?.message || 'Create failed'); return; }
-    router.replace(`/teams/${data.id}/assign`); // go assign players
+
+    if (error || !data) {
+      // surface exact reason
+      const details = error?.details || error?.message || 'Create failed';
+      // friendly mapping for common cases
+      if (details.includes('unique')) setMsg('That team name already exists.');
+      else if (details.includes('permission') || details.includes('RLS')) setMsg('Permission denied. Check RLS policy on teams.');
+      else setMsg(`Error: ${details}`);
+      return;
+    }
+
+    // go assign players for this team
+    router.replace(`/teams/${data.id}/assign`);
   }
 
   return (
@@ -51,9 +65,12 @@ export default function NewTeamPage() {
             />
           </label>
 
-          <button type="submit" disabled={saving}
-            className="w-full bg-blue-700 hover:bg-blue-800 text-white rounded-md px-3 py-2 font-semibold disabled:opacity-60">
-            {saving ? 'Saving…' : 'Save'}
+          <button
+            type="submit"
+            disabled={saving}
+            className="w-full bg-blue-700 hover:bg-blue-800 text-white rounded-md px-3 py-2 font-semibold disabled:opacity-60"
+          >
+            {saving ? 'Saving…' : 'Save team'}
           </button>
 
           {msg && <div className="text-sm text-red-800">{msg}</div>}
