@@ -5,8 +5,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
 export default function NewTeamPage() {
@@ -29,7 +28,7 @@ export default function NewTeamPage() {
 
     setSaving(false);
     if (error || !data) { setMsg(error?.message || 'Create failed'); return; }
-    router.replace(`/teams/${data.id}/roster`);
+    router.replace(`/teams/${data.id}/assign`); // go assign players
   }
 
   return (
