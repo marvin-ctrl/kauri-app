@@ -24,8 +24,9 @@ export default function AssignPlayerToTeamsPage() {
 
   useEffect(() => {
     (async () => {
-      const { data } = await supabase.from('teams').select('id,name').order('name');
-      setTeams(data || []);
+      const { data, error } = await supabase.from('teams').select('id,name').order('name');
+      if (!error) setTeams(data || []);
+      else setMsg(error.message);
     })();
   }, []);
 
@@ -39,12 +40,20 @@ export default function AssignPlayerToTeamsPage() {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setMsg(null);
-    if (selected.size === 0) { setMsg('Select at least one team.'); return; }
+
+    if (selected.size === 0) {
+      setMsg('Select at least one team.');
+      return;
+    }
 
     setSaving(true);
     try {
-      const termId = typeof window !== 'undefined' ? localStorage.getItem('kauri.termId') : null;
-      if (!termId) { setMsg('Select a term in the header.'); setSaving(false); return; }
+      const termId = localStorage.getItem('kauri.termId');
+      if (!termId) {
+        setMsg('Select a term in the header.');
+        setSaving(false);
+        return;
+      }
 
       // ensure player_terms row
       const pt = await supabase
@@ -54,14 +63,16 @@ export default function AssignPlayerToTeamsPage() {
         .eq('term_id', termId)
         .maybeSingle();
 
-      let playerTermId = pt.data?.id as string | undefined;
-      if (!playerTermId) {
+      let playerTermId: string;
+      if (pt.data?.id) {
+        playerTermId = pt.data.id;
+      } else {
         const ins = await supabase
           .from('player_terms')
           .insert({ player_id: String(playerId), term_id: termId, status: 'registered' })
           .select('id')
           .single();
-        if (ins.error || !ins.data) throw ins.error || new Error('Failed to create player_terms');
+        if (ins.error || !ins.data) throw new Error(ins.error?.message || 'Failed to create player_terms');
         playerTermId = ins.data.id;
       }
 
@@ -75,6 +86,7 @@ export default function AssignPlayerToTeamsPage() {
           .eq('team_id', team_id)
           .eq('term_id', termId)
           .maybeSingle();
+
         if (tt.data?.id) {
           teamTermIds.push(tt.data.id);
         } else {
@@ -83,37 +95,35 @@ export default function AssignPlayerToTeamsPage() {
             .insert({ team_id, term_id: termId })
             .select('id')
             .single();
-          if (ins.error || !ins.data) throw ins.error || new Error('Failed to create team_terms');
+          if (ins.error || !ins.data) throw new Error(ins.error?.message || 'Failed to create team_terms');
           teamTermIds.push(ins.data.id);
         }
       }
 
-      // insert memberships if missing
+      // existing memberships for this player this term
       const existing = await supabase
         .from('memberships')
         .select('team_term_id')
         .eq('player_term_id', playerTermId);
 
-      const existingSet = new Set((existing.data || []).map(r => r.team_term_id));
+      const existingSet = new Set((existing.data || []).map(r => r.team_term_id as string));
+
+      // rows to add
       const rows = teamTermIds
         .filter(ttid => !existingSet.has(ttid))
-        .map(ttid => ({
-          player_term_id: playerTermId!,
-          team_term_id: ttid,
-          role,
-        }));
+        .map(ttid => ({ player_term_id: playerTermId, team_term_id: ttid, role }));
 
       if (rows.length) {
-        const { error } = await supabase.from('memberships').insert(rows);
-        if (error) { setMsg(`Error: ${error.message}`); setSaving(false); return; }
+        // prefer upsert to avoid unique violations if double-clicked
+        const { error } = await supabase
+          .from('memberships')
+          .upsert(rows, { onConflict: 'team_term_id,player_term_id' });
+        if (error) throw new Error(error.message);
       }
 
       // optional joined date on player_terms
       if (joinedAt) {
-        await supabase
-          .from('player_terms')
-          .update({ registered_at: joinedAt })
-          .eq('id', playerTermId);
+        await supabase.from('player_terms').update({ registered_at: joinedAt }).eq('id', playerTermId);
       }
 
       setSaving(false);
