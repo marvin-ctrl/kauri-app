@@ -17,8 +17,10 @@ function NavLink({ href, label }: { href: string; label: string }) {
   return (
     <Link
       href={href}
-      className={`px-3 py-2 rounded-md text-sm font-semibold ${
-        active ? 'bg-neutral-900 text-white' : 'bg-neutral-200 text-neutral-900 hover:bg-neutral-300'
+      className={`px-3 py-2 rounded-md text-sm font-semibold transition-all ${
+        active 
+          ? 'bg-[#172F56] text-white shadow-sm' 
+          : 'bg-white text-[#172F56] hover:bg-[#79CBC4] hover:text-white border border-[#e2e8f0]'
       }`}
     >
       {label}
@@ -33,11 +35,11 @@ export default function Nav() {
   }, []);
 
   return (
-    <nav className="w-full border-b border-neutral-200 bg-white">
+    <nav className="w-full border-b border-[#e2e8f0] bg-white shadow-sm">
       <div className="max-w-6xl mx-auto flex items-center justify-between p-3 gap-3">
         <div className="flex items-center gap-3">
-          <Link href="/dashboard" className="text-lg font-extrabold tracking-tight text-neutral-900">
-            Kauri
+          <Link href="/dashboard" className="text-xl font-extrabold tracking-tight text-[#172F56] hover:text-[#79CBC4] transition-colors" style={{ fontFamily: 'Oswald, sans-serif' }}>
+            KAURI FUTSAL
           </Link>
           <div className="flex items-center gap-2">
             <NavLink href="/dashboard" label="Dashboard" />
@@ -51,7 +53,7 @@ export default function Nav() {
           <TermSwitcher />
           <button
             onClick={signOut}
-            className="px-3 py-2 rounded-md text-sm font-semibold bg-neutral-900 text-white hover:bg-black"
+            className="px-3 py-2 rounded-md text-sm font-semibold bg-[#F289AE] text-[#172F56] hover:bg-[#e5679a] transition-all shadow-sm"
           >
             Sign out
           </button>
