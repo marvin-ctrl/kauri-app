@@ -42,10 +42,10 @@ export default function Nav() {
           </Link>
           <div className="flex items-center gap-2">
             <NavLink href="/dashboard" label="Dashboard" />
+            <NavLink href="/events" label="Events" />
             <NavLink href="/players" label="Players" />
             <NavLink href="/teams" label="Teams" />
             <NavLink href="/terms" label="Terms" />
-            <NavLink href="/events/new" label="New event" />
           </div>
         </div>
 
