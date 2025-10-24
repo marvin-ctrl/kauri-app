@@ -35,7 +35,6 @@ export default function Nav() {
   return (
     <nav className="w-full border-b border-neutral-200 bg-white">
       <div className="max-w-6xl mx-auto flex items-center justify-between p-3 gap-3">
-        {/* left: brand + links */}
         <div className="flex items-center gap-3">
           <Link href="/dashboard" className="text-lg font-extrabold tracking-tight text-neutral-900">
             Kauri
@@ -48,8 +47,6 @@ export default function Nav() {
             <NavLink href="/terms" label="Terms" />
           </div>
         </div>
-
-        {/* right: term switcher + sign out */}
         <div className="flex items-center gap-2">
           <TermSwitcher />
           <button
