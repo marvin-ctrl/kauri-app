@@ -1,6 +1,6 @@
 import './globals.css';
 import type { Metadata } from 'next';
-import Nav from '../components/Nav'; // ← relative import
+import Nav from '../components/Nav'; // ← relative import from /app to /components
 
 export const metadata: Metadata = {
   title: 'Kauri Futsal',
