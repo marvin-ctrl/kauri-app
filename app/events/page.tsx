@@ -5,8 +5,7 @@ import Link from 'next/link';
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
 type EventRow = {
@@ -29,7 +28,6 @@ export default function EventsPage() {
       const { data, error } = await supabase
         .from('events')
         .select('id, title, type, location, starts_at')
-        .gte('starts_at', new Date().toISOString())
         .order('starts_at', { ascending: true });
       if (error) setMsg(error.message);
       setRows(data || []);
@@ -79,7 +77,7 @@ export default function EventsPage() {
                 </tr>
               ))}
               {rows.length === 0 && (
-                <tr><td className="p-4 text-neutral-700" colSpan={5}>No upcoming events.</td></tr>
+                <tr><td className="p-4 text-neutral-700" colSpan={5}>No events.</td></tr>
               )}
             </tbody>
           </table>
