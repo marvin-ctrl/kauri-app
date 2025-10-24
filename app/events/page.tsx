@@ -12,7 +12,7 @@ const supabase = createClient(
 type EventRow = {
   id: string;
   title: string | null;
-  type: 'training'|'game'|'tournament'|string;
+  type: string;
   location: string | null;
   starts_at: string;
 };
