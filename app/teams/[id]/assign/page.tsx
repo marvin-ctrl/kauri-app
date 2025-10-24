@@ -25,15 +25,14 @@ export default function AssignPlayerToTeamsPage() {
   useEffect(() => {
     (async () => {
       const { data, error } = await supabase.from('teams').select('id,name').order('name');
-      if (!error) setTeams(data || []);
-      else setMsg(error.message);
+      if (error) setMsg(error.message);
+      setTeams(data || []);
     })();
   }, []);
 
   function toggle(teamId: string) {
     const next = new Set(selected);
-    if (next.has(teamId)) next.delete(teamId);
-    else next.add(teamId);
+    next.has(teamId) ? next.delete(teamId) : next.add(teamId);
     setSelected(next);
   }
 
@@ -41,19 +40,12 @@ export default function AssignPlayerToTeamsPage() {
     e.preventDefault();
     setMsg(null);
 
-    if (selected.size === 0) {
-      setMsg('Select at least one team.');
-      return;
-    }
+    if (selected.size === 0) { setMsg('Select at least one team.'); return; }
 
     setSaving(true);
     try {
       const termId = localStorage.getItem('kauri.termId');
-      if (!termId) {
-        setMsg('Select a term in the header.');
-        setSaving(false);
-        return;
-      }
+      if (!termId) { setMsg('Select a term in the header.'); setSaving(false); return; }
 
       // ensure player_terms row
       const pt = await supabase
@@ -76,7 +68,7 @@ export default function AssignPlayerToTeamsPage() {
         playerTermId = ins.data.id;
       }
 
-      // ensure team_terms rows for each selected team
+      // ensure team_terms rows
       const teamIds = Array.from(selected);
       const teamTermIds: string[] = [];
       for (const team_id of teamIds) {
@@ -114,14 +106,12 @@ export default function AssignPlayerToTeamsPage() {
         .map(ttid => ({ player_term_id: playerTermId, team_term_id: ttid, role }));
 
       if (rows.length) {
-        // prefer upsert to avoid unique violations if double-clicked
         const { error } = await supabase
           .from('memberships')
           .upsert(rows, { onConflict: 'team_term_id,player_term_id' });
         if (error) throw new Error(error.message);
       }
 
-      // optional joined date on player_terms
       if (joinedAt) {
         await supabase.from('player_terms').update({ registered_at: joinedAt }).eq('id', playerTermId);
       }
@@ -139,10 +129,7 @@ export default function AssignPlayerToTeamsPage() {
       <div className="max-w-2xl mx-auto bg-white border border-neutral-200 rounded-xl shadow-sm p-6 space-y-6">
         <header className="flex items-center justify-between">
           <h1 className="text-3xl font-extrabold tracking-tight">Assign to teams</h1>
-          <a
-            href={`/players/${playerId}`}
-            className="px-3 py-2 rounded-md bg-neutral-200 hover:bg-neutral-300 text-neutral-900 font-semibold"
-          >
+          <a href={`/players/${playerId}`} className="px-3 py-2 rounded-md bg-neutral-200 hover:bg-neutral-300 text-neutral-900 font-semibold">
             Cancel
           </a>
         </header>
@@ -156,11 +143,7 @@ export default function AssignPlayerToTeamsPage() {
                 return (
                   <li key={t.id}>
                     <label className="flex items-center gap-2 p-2 border border-neutral-200 rounded-md hover:bg-neutral-50">
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={() => toggle(t.id)}
-                      />
+                      <input type="checkbox" checked={checked} onChange={() => toggle(t.id)} />
                       <span className="text-sm">{t.name}</span>
                     </label>
                   </li>
@@ -174,23 +157,11 @@ export default function AssignPlayerToTeamsPage() {
             <legend className="text-sm font-bold px-1">Role</legend>
             <div className="flex items-center gap-4">
               <label className="flex items-center gap-2">
-                <input
-                  type="radio"
-                  name="role"
-                  value="player"
-                  checked={role === 'player'}
-                  onChange={() => setRole('player')}
-                />
+                <input type="radio" name="role" value="player" checked={role === 'player'} onChange={() => setRole('player')} />
                 <span className="text-sm">Player</span>
               </label>
               <label className="flex items-center gap-2">
-                <input
-                  type="radio"
-                  name="role"
-                  value="captain"
-                  checked={role === 'captain'}
-                  onChange={() => setRole('captain')}
-                />
+                <input type="radio" name="role" value="captain" checked={role === 'captain'} onChange={() => setRole('captain')} />
                 <span className="text-sm">Captain</span>
               </label>
             </div>
@@ -198,19 +169,10 @@ export default function AssignPlayerToTeamsPage() {
 
           <label className="block text-sm font-medium">
             Registered date (optional)
-            <input
-              type="date"
-              value={joinedAt}
-              onChange={e => setJoinedAt(e.target.value)}
-              className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white"
-            />
+            <input type="date" value={joinedAt} onChange={e => setJoinedAt(e.target.value)} className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white" />
           </label>
 
-          <button
-            type="submit"
-            disabled={saving}
-            className="w-full bg-blue-700 hover:bg-blue-800 text-white rounded-md px-3 py-2 font-semibold disabled:opacity-60"
-          >
+          <button type="submit" disabled={saving} className="w-full bg-blue-700 hover:bg-blue-800 text-white rounded-md px-3 py-2 font-semibold disabled:opacity-60">
             {saving ? 'Saving…' : 'Assign to selected teams'}
           </button>
 
