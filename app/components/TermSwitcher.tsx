@@ -39,11 +39,11 @@ export default function TermSwitcher() {
 
   return (
     <div className="flex items-center gap-2">
-      <label className="text-sm text-[#5a718f] font-medium">Term</label>
-      <select 
-        value={termId} 
-        onChange={e => change(e.target.value)} 
-        className="border border-[#e2e8f0] rounded-md px-2 py-1 bg-white text-sm text-[#172F56] focus:border-[#79CBC4] focus:ring-2 focus:ring-[#79CBC4]/20 transition-all"
+      <label className="text-sm text-black font-medium">Term</label>
+      <select
+        value={termId}
+        onChange={e => change(e.target.value)}
+        className="border border-[#e2e8f0] rounded-md px-2 py-1 bg-white text-sm text-black focus:border-[#79CBC4] focus:ring-2 focus:ring-[#79CBC4]/20 transition-all"
       >
         {terms.map(t => (
           <option key={t.id} value={t.id}>{t.year} • Term {t.term}</option>

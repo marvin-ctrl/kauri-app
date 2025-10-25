@@ -10,18 +10,18 @@
   --kauri-seafoam: #79CBC4;    /* Teal */
   --kauri-white: #FFFFFF;
 
-  /* Light mode defaults: dark text on light bg */
+  /* Light mode defaults: black text on light bg */
   --background: #FFFFFF;
-  --foreground: #0f172a;       /* readable body text */
-  --muted: #5a718f;
+  --foreground: #000000;       /* black text for readability */
+  --muted: #000000;            /* black for muted text too */
   --border: #e2e8f0;
   --ring: #79CBC4;
-  --link: #172F56;
+  --link: #000000;             /* black links */
   --link-hover: #79CBC4;
   --success-bg: #d1f5f2;
-  --success-fg: #0d7a6e;
+  --success-fg: #000000;       /* black for success messages */
   --error-bg: #ffd7e4;
-  --error-fg: #c41d5e;
+  --error-fg: #000000;         /* black for error messages */
   --card: #FFFFFF;
   --input-bg: #FFFFFF;
   --accent: #F289AE;
@@ -123,11 +123,11 @@ button:disabled,
 .btn-primary { background: var(--kauri-midnight); color: #fff; }
 .btn-primary:hover { background: #1e3a5f; }
 
-/* Accent and secondary keep dark text only if bg is light */
-.btn-accent { background: var(--kauri-taffy); color: var(--kauri-midnight); }
+/* Accent and secondary use black text on light backgrounds */
+.btn-accent { background: var(--kauri-taffy); color: #000000; }
 .btn-accent:hover { background: var(--accent-hover); }
 
-.btn-secondary { background: var(--kauri-seafoam); color: var(--kauri-midnight); }
+.btn-secondary { background: var(--kauri-seafoam); color: #000000; }
 .btn-secondary:hover { background: #68b8b0; }
 
 /* Inputs */
