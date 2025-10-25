@@ -40,8 +40,7 @@ export default function Nav() {
         <div className="flex items-center gap-3">
           <Link
             href="/dashboard"
-            className="text-xl font-extrabold tracking-tight text-[#172F56] hover:text-[#79CBC4] transition-colors"
-            style={{ fontFamily: 'Oswald, sans-serif' }}
+            className="text-xl font-extrabold tracking-tight text-[#172F56] hover:text-[#79CBC4] transition-colors font-brand"
           >
             KAURI FUTSAL
           </Link>
