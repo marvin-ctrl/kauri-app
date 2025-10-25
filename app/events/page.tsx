@@ -20,6 +20,7 @@ export default function EventsPage() {
   const [rows, setRows] = useState<EventRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState<string | null>(null);
+  const [showPast, setShowPast] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -35,6 +36,11 @@ export default function EventsPage() {
     })();
   }, []);
 
+  const now = new Date();
+  const filteredEvents = showPast
+    ? rows
+    : rows.filter(ev => new Date(ev.starts_at) >= now);
+
   if (loading) return <main className="min-h-screen grid place-items-center">Loading…</main>;
 
   return (
@@ -42,9 +48,21 @@ export default function EventsPage() {
       <div className="max-w-4xl mx-auto space-y-4">
         <header className="flex items-center justify-between">
           <h1 className="text-3xl font-extrabold tracking-tight">Events</h1>
-          <Link href="/events/new" className="px-3 py-2 rounded-md bg-blue-700 hover:bg-blue-800 text-white font-semibold">
-            New event
-          </Link>
+          <div className="flex gap-2 items-center">
+            <button
+              onClick={() => setShowPast(!showPast)}
+              className={`px-3 py-2 rounded-md text-sm font-semibold transition-all ${
+                showPast
+                  ? 'bg-[#172F56] text-white'
+                  : 'bg-white border-2 border-neutral-300 text-neutral-700 hover:bg-neutral-50'
+              }`}
+            >
+              {showPast ? 'Hide past events' : 'Show past events'}
+            </button>
+            <Link href="/events/new" className="px-3 py-2 rounded-md bg-blue-700 hover:bg-blue-800 text-white font-semibold">
+              New event
+            </Link>
+          </div>
         </header>
 
         <section className="bg-white border border-neutral-200 rounded-xl shadow-sm overflow-hidden">
@@ -59,7 +77,7 @@ export default function EventsPage() {
               </tr>
             </thead>
             <tbody>
-              {rows.map(ev => (
+              {filteredEvents.map(ev => (
                 <tr key={ev.id} className="border-b border-neutral-100">
                   <td className="p-3">
                     {new Date(ev.starts_at).toLocaleString('en-NZ', {
@@ -70,13 +88,19 @@ export default function EventsPage() {
                   <td className="p-3">{ev.title ?? '—'}</td>
                   <td className="p-3">{ev.location ?? '—'}</td>
                   <td className="p-3">
-                    <Link href={`/events/${ev.id}/roll`} className="underline text-blue-700 hover:text-blue-800">
-                      Take roll
-                    </Link>
+                    <div className="flex gap-2">
+                      <Link href={`/events/${ev.id}/roll`} className="underline text-blue-700 hover:text-blue-800">
+                        Take roll
+                      </Link>
+                      <span className="text-neutral-300">•</span>
+                      <Link href={`/events/${ev.id}/edit`} className="underline text-neutral-700 hover:text-neutral-900">
+                        Edit
+                      </Link>
+                    </div>
                   </td>
                 </tr>
               ))}
-              {rows.length === 0 && (
+              {filteredEvents.length === 0 && (
                 <tr><td className="p-4 text-neutral-700" colSpan={5}>No events.</td></tr>
               )}
             </tbody>

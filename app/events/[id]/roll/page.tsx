@@ -19,6 +19,7 @@ type PlayerRow = {
   last_name: string;
   preferred_name: string | null;
   jersey_no: number | null;
+  photo_url: string | null;
   // current status in attendance for this event (if any)
   status: 'present' | 'absent' | 'late' | null;
   notes: string | null;
@@ -62,7 +63,7 @@ export default function EventRollPage() {
       const termId = localStorage.getItem('kauri.termId');
       if (!termId) { setMsg('Select a term in the header.'); setLoading(false); return; }
 
-      let pts: { id: string, players: { first_name: string, last_name: string, preferred_name: string|null, jersey_no: number|null } }[] = [];
+      let pts: { id: string, players: { first_name: string, last_name: string, preferred_name: string|null, jersey_no: number|null, photo_url: string|null } }[] = [];
 
       if (ev.data.team_term_id) {
         // roster for this team
@@ -71,7 +72,7 @@ export default function EventRollPage() {
           .select(`
             player_terms (
               id,
-              players ( first_name, last_name, preferred_name, jersey_no )
+              players ( first_name, last_name, preferred_name, jersey_no, photo_url )
             )
           `)
           .eq('team_term_id', ev.data.team_term_id);
@@ -80,7 +81,7 @@ export default function EventRollPage() {
         // all registered players in the term
         const all = await supabase
           .from('player_terms')
-          .select('id, players ( first_name, last_name, preferred_name, jersey_no )')
+          .select('id, players ( first_name, last_name, preferred_name, jersey_no, photo_url )')
           .eq('term_id', termId);
         pts = (all.data || []) as any;
       }
@@ -92,6 +93,7 @@ export default function EventRollPage() {
         last_name: pt.players.last_name,
         preferred_name: pt.players.preferred_name,
         jersey_no: pt.players.jersey_no,
+        photo_url: pt.players.photo_url,
         status: null,
         notes: null
       }));
@@ -193,9 +195,9 @@ export default function EventRollPage() {
             placeholder="Search by name or jersey…"
             className="border border-neutral-300 rounded-md px-3 py-2 bg-white"
           />
-          <button onClick={()=>bulk('present')} className="px-2 py-1 text-sm rounded bg-neutral-800 text-white">All present</button>
-          <button onClick={()=>bulk('absent')}  className="px-2 py-1 text-sm rounded bg-neutral-200">All absent</button>
-          <button onClick={()=>bulk(null)}      className="px-2 py-1 text-sm rounded bg-neutral-200">Clear</button>
+          <button onClick={()=>bulk('present')} className="px-3 py-2 text-sm font-semibold rounded bg-green-700 hover:bg-green-800 text-white">All present</button>
+          <button onClick={()=>bulk('absent')}  className="px-3 py-2 text-sm font-semibold rounded bg-red-700 hover:bg-red-800 text-white">All absent</button>
+          <button onClick={()=>bulk(null)}      className="px-3 py-2 text-sm font-semibold rounded bg-neutral-700 hover:bg-neutral-800 text-white">Clear</button>
         </div>
 
         <section className="bg-white border border-neutral-200 rounded-xl shadow-sm overflow-hidden">
@@ -213,24 +215,54 @@ export default function EventRollPage() {
                 const name = r.preferred_name || `${r.first_name} ${r.last_name}`;
                 return (
                   <tr key={r.player_term_id} className="border-b border-neutral-100">
-                    <td className="p-3">{name}</td>
+                    <td className="p-3">
+                      <div className="flex items-center gap-3">
+                        {r.photo_url ? (
+                          <img
+                            src={r.photo_url}
+                            alt={name}
+                            className="w-10 h-10 rounded-full object-cover border-2 border-neutral-200"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display = 'none';
+                            }}
+                          />
+                        ) : (
+                          <div className="w-10 h-10 rounded-full bg-neutral-200 flex items-center justify-center text-neutral-600 font-bold text-sm border-2 border-neutral-300">
+                            {r.first_name.charAt(0)}{r.last_name.charAt(0)}
+                          </div>
+                        )}
+                        <span>{name}</span>
+                      </div>
+                    </td>
                     <td className="p-3">{r.jersey_no ?? '—'}</td>
                     <td className="p-3">
                       <div className="inline-flex gap-1">
                         <button
                           type="button"
                           onClick={()=>setStatus(r.player_term_id,'present')}
-                          className={`px-2 py-1 rounded ${r.status==='present'?'bg-green-700 text-white':'bg-neutral-200'}`}
+                          className={`px-3 py-1.5 text-sm font-semibold rounded transition-all ${
+                            r.status==='present'
+                              ? 'bg-green-700 text-white shadow-md ring-2 ring-green-300'
+                              : 'bg-white border-2 border-green-600 text-green-700 hover:bg-green-50'
+                          }`}
                         >Present</button>
                         <button
                           type="button"
                           onClick={()=>setStatus(r.player_term_id,'late')}
-                          className={`px-2 py-1 rounded ${r.status==='late'?'bg-amber-600 text-white':'bg-neutral-200'}`}
+                          className={`px-3 py-1.5 text-sm font-semibold rounded transition-all ${
+                            r.status==='late'
+                              ? 'bg-amber-600 text-white shadow-md ring-2 ring-amber-300'
+                              : 'bg-white border-2 border-amber-600 text-amber-700 hover:bg-amber-50'
+                          }`}
                         >Late</button>
                         <button
                           type="button"
                           onClick={()=>setStatus(r.player_term_id,'absent')}
-                          className={`px-2 py-1 rounded ${r.status==='absent'?'bg-red-700 text-white':'bg-neutral-200'}`}
+                          className={`px-3 py-1.5 text-sm font-semibold rounded transition-all ${
+                            r.status==='absent'
+                              ? 'bg-red-700 text-white shadow-md ring-2 ring-red-300'
+                              : 'bg-white border-2 border-red-600 text-red-700 hover:bg-red-50'
+                          }`}
                         >Absent</button>
                       </div>
                     </td>

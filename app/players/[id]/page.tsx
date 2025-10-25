@@ -17,6 +17,7 @@ type Player = {
   preferred_name: string | null;
   jersey_no: number | null;
   dob: string | null;
+  photo_url: string | null;
 };
 
 export default function PlayerProfilePage() {
@@ -33,7 +34,7 @@ export default function PlayerProfilePage() {
 
       const { data, error } = await supabase
         .from('players')
-        .select('id, first_name, last_name, preferred_name, jersey_no, dob')
+        .select('id, first_name, last_name, preferred_name, jersey_no, dob, photo_url')
         .eq('id', pid)
         .maybeSingle();
       if (error) setMsg(error.message);
@@ -50,7 +51,19 @@ export default function PlayerProfilePage() {
     <main className="min-h-screen p-6">
       <div className="max-w-3xl mx-auto space-y-4">
         <header className="flex items-center justify-between">
-          <h1 className="text-3xl font-extrabold tracking-tight">{name}</h1>
+          <div className="flex items-center gap-4">
+            {p.photo_url && (
+              <img
+                src={p.photo_url}
+                alt={name}
+                className="w-20 h-20 rounded-full object-cover border-3 border-[#172F56] shadow-md"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).style.display = 'none';
+                }}
+              />
+            )}
+            <h1 className="text-3xl font-extrabold tracking-tight">{name}</h1>
+          </div>
           <div className="flex gap-2">
             {/* REAL links using p.id */}
             <Link href={`/players/${p.id}/assign`} className="px-3 py-2 rounded-md bg-neutral-200 hover:bg-neutral-300 text-neutral-900 font-semibold">

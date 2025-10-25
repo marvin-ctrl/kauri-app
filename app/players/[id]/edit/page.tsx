@@ -188,15 +188,30 @@ export default function EditPlayerPage() {
             </select>
           </label>
 
-          <label className="block text-sm font-medium">
-            Photo URL (optional)
-            <input
-              value={photoUrl}
-              onChange={e=>setPhotoUrl(e.target.value)}
-              placeholder="https://…"
-              className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white"
-            />
-          </label>
+          <div className="space-y-2">
+            <label className="block text-sm font-medium">
+              Photo URL (optional)
+              <input
+                value={photoUrl}
+                onChange={e=>setPhotoUrl(e.target.value)}
+                placeholder="https://…"
+                className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white"
+              />
+            </label>
+            {photoUrl && (
+              <div className="flex items-center gap-3 p-3 bg-neutral-50 rounded-md border border-neutral-200">
+                <img
+                  src={photoUrl}
+                  alt="Player photo preview"
+                  className="w-16 h-16 rounded-full object-cover border-2 border-neutral-300"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = 'none';
+                  }}
+                />
+                <span className="text-xs text-neutral-600">Preview</span>
+              </div>
+            )}
+          </div>
 
           <label className="block text-sm font-medium">
             Notes

@@ -20,8 +20,8 @@ function NavLink({ href, label }: { href: string; label: string }) {
       className={[
         'px-3 py-2 rounded-md text-sm font-semibold transition-all outline-none',
         active
-          ? 'bg-[#172F56] text-white shadow-sm'                  // dark chip → white text OK
-          : 'bg-white text-[#172F56] hover:bg-[#79CBC4] border border-[#e2e8f0]', // light/teal bg → dark text
+          ? 'bg-[#172F56] text-white shadow-sm'
+          : 'bg-white text-[#172F56] hover:bg-[#172F56] hover:text-white border border-[#e2e8f0]',
         'focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#79CBC4] focus-visible:ring-offset-white'
       ].join(' ')}
     >
