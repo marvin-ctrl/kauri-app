@@ -25,18 +25,18 @@ export default function DashboardPage() {
   if (!ready) return <main className="min-h-screen grid place-items-center bg-gradient-to-br from-[#172F56] to-[#79CBC4]"><div className="text-white text-xl">Loading…</div></main>;
 
   return (
-    <main className="min-h-screen p-6 bg-gradient-to-br from-white via-[#f8fffe] to-[#f0faf9]">
+    <main className="min-h-screen p-4 sm:p-6 bg-gradient-to-br from-white via-[#f8fffe] to-[#f0faf9]">
       <div className="max-w-6xl mx-auto space-y-6">
-        <header className="flex items-center justify-between bg-white rounded-xl shadow-sm border border-[#e2e8f0] p-6">
-          <div>
-            <h1 className="text-4xl font-extrabold tracking-tight text-[#172F56]" style={{ fontFamily: 'Oswald, sans-serif' }}>DASHBOARD</h1>
-            <p className="text-sm text-[#5a718f] mt-1 font-medium">{email}</p>
+        <header className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between bg-white rounded-xl shadow-sm border border-[#e2e8f0] p-4 sm:p-6 gap-4">
+          <div className="text-center sm:text-left">
+            <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-[#172F56]" style={{ fontFamily: 'Oswald, sans-serif' }}>DASHBOARD</h1>
+            <p className="text-sm text-[#475569] mt-1 font-medium truncate">{email}</p>
           </div>
-          <div className="flex gap-3">
-            <Link href="/events/new" className="px-4 py-3 rounded-lg bg-[#79CBC4] hover:bg-[#68b8b0] text-white font-bold shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Link href="/events/new" className="px-4 py-3 rounded-lg bg-[#172F56] hover:bg-[#1e3a5f] text-white font-bold shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5 text-center whitespace-nowrap">
               New Event
             </Link>
-            <Link href="/events" className="px-4 py-3 rounded-lg bg-white border-2 border-[#79CBC4] hover:bg-[#79CBC4] text-[#172F56] hover:text-white font-bold transition-all">
+            <Link href="/events" className="px-4 py-3 rounded-lg bg-white border-2 border-[#172F56] hover:bg-[#172F56] text-[#172F56] hover:text-white font-bold transition-all text-center whitespace-nowrap">
               View Events
             </Link>
           </div>
@@ -53,7 +53,7 @@ export default function DashboardPage() {
               </div>
               <h3 className="font-bold text-lg text-[#172F56]" style={{ fontFamily: 'Oswald, sans-serif' }}>EVENTS</h3>
             </div>
-            <p className="text-sm text-[#5a718f]">View schedule and take roll</p>
+            <p className="text-sm text-[#475569]">View schedule and take roll</p>
           </Link>
           
           <Link href="/teams" className="group block bg-white border-2 border-[#e2e8f0] hover:border-[#F289AE] rounded-xl p-6 hover:shadow-lg transition-all transform hover:-translate-y-1">
@@ -65,7 +65,7 @@ export default function DashboardPage() {
               </div>
               <h3 className="font-bold text-lg text-[#172F56]" style={{ fontFamily: 'Oswald, sans-serif' }}>TEAMS</h3>
             </div>
-            <p className="text-sm text-[#5a718f]">Manage team rosters</p>
+            <p className="text-sm text-[#475569]">Manage team rosters</p>
           </Link>
           
           <Link href="/players" className="group block bg-white border-2 border-[#e2e8f0] hover:border-[#79CBC4] rounded-xl p-6 hover:shadow-lg transition-all transform hover:-translate-y-1">
@@ -77,7 +77,7 @@ export default function DashboardPage() {
               </div>
               <h3 className="font-bold text-lg text-[#172F56]" style={{ fontFamily: 'Oswald, sans-serif' }}>PLAYERS</h3>
             </div>
-            <p className="text-sm text-[#5a718f]">Add and manage players</p>
+            <p className="text-sm text-[#475569]">Add and manage players</p>
           </Link>
           
           <Link href="/terms" className="group block bg-white border-2 border-[#e2e8f0] hover:border-[#F289AE] rounded-xl p-6 hover:shadow-lg transition-all transform hover:-translate-y-1">
@@ -89,7 +89,7 @@ export default function DashboardPage() {
               </div>
               <h3 className="font-bold text-lg text-[#172F56]" style={{ fontFamily: 'Oswald, sans-serif' }}>TERMS</h3>
             </div>
-            <p className="text-sm text-[#5a718f]">Manage school terms</p>
+            <p className="text-sm text-[#475569]">Manage school terms</p>
           </Link>
         </section>
       </div>

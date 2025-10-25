@@ -38,31 +38,37 @@ export default function Nav() {
 
   return (
     <nav className="w-full border-b border-[#e2e8f0] bg-white shadow-sm">
-      <div className="max-w-6xl mx-auto flex items-center justify-between p-3 gap-3">
-        <div className="flex items-center gap-3">
-          <Link
-            href="/dashboard"
-            className="text-xl font-extrabold tracking-tight text-[#172F56] hover:text-[#79CBC4] transition-colors"
-            style={{ fontFamily: 'Oswald, sans-serif' }}
-          >
-            KAURI FUTSAL
-          </Link>
-          <div className="flex items-center gap-2">
-            <NavLink href="/dashboard" label="Dashboard" />
-            <NavLink href="/events" label="Events" />
-            <NavLink href="/players" label="Players" />
-            <NavLink href="/teams" label="Teams" />
-            <NavLink href="/terms" label="Terms" />
+      <div className="max-w-6xl mx-auto p-3">
+        {/* Mobile & Desktop Layout */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+          {/* Brand & Main Nav */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            <Link
+              href="/dashboard"
+              className="text-lg sm:text-xl font-extrabold tracking-tight text-[#172F56] hover:text-[#79CBC4] transition-colors text-center sm:text-left"
+              style={{ fontFamily: 'Oswald, sans-serif' }}
+            >
+              KAURI FUTSAL
+            </Link>
+            {/* Nav Links - Wrap on mobile */}
+            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+              <NavLink href="/dashboard" label="Dashboard" />
+              <NavLink href="/events" label="Events" />
+              <NavLink href="/players" label="Players" />
+              <NavLink href="/teams" label="Teams" />
+              <NavLink href="/terms" label="Terms" />
+            </div>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <TermSwitcher />
-          <button
-            onClick={signOut}
-            className="px-3 py-2 rounded-md text-sm font-semibold bg-[#F289AE] text-[#172F56] hover:bg-[#e5679a] transition-all shadow-sm"
-          >
-            Sign out
-          </button>
+          {/* Right Side - Term Switcher & Sign Out */}
+          <div className="flex flex-wrap items-center justify-center sm:justify-end gap-2">
+            <TermSwitcher />
+            <button
+              onClick={signOut}
+              className="px-3 py-2 rounded-md text-sm font-semibold bg-[#F289AE] text-[#172F56] hover:bg-[#e5679a] transition-all shadow-sm whitespace-nowrap"
+            >
+              Sign out
+            </button>
+          </div>
         </div>
       </div>
     </nav>

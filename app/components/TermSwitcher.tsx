@@ -34,12 +34,12 @@ export default function TermSwitcher() {
   }
 
   if (!terms.length) return (
-    <a href="/terms/new" className="px-3 py-2 text-sm rounded bg-[#79CBC4] text-white hover:bg-[#68b8b0] transition-colors shadow-sm font-semibold">Add term</a>
+    <a href="/terms/new" className="px-3 py-2 text-sm rounded bg-[#172F56] text-white hover:bg-[#1e3a5f] transition-colors shadow-sm font-semibold">Add term</a>
   );
 
   return (
     <div className="flex items-center gap-2">
-      <label className="text-sm text-[#5a718f] font-medium">Term</label>
+      <label className="text-sm text-[#475569] font-medium">Term</label>
       <select 
         value={termId} 
         onChange={e => change(e.target.value)} 

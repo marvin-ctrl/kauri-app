@@ -48,11 +48,11 @@ export default function PlayersPage() {
   if (loading) return <main className="min-h-screen grid place-items-center">Loading…</main>;
 
   return (
-    <main className="min-h-screen p-6">
+    <main className="min-h-screen p-4 sm:p-6">
       <div className="max-w-5xl mx-auto space-y-4">
-        <header className="flex items-center justify-between">
-          <h1 className="text-3xl font-extrabold tracking-tight">Players</h1>
-          <Link href="/players/new" className="px-3 py-2 rounded-md bg-blue-700 hover:bg-blue-800 text-white font-semibold">
+        <header className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#172F56]">Players</h1>
+          <Link href="/players/new" className="px-3 py-2 rounded-md bg-[#172F56] hover:bg-[#1e3a5f] text-white font-semibold text-center whitespace-nowrap">
             New player
           </Link>
         </header>
@@ -62,12 +62,13 @@ export default function PlayersPage() {
             value={q}
             onChange={e=>setQ(e.target.value)}
             placeholder="Search by name or jersey…"
-            className="border border-neutral-300 rounded-md px-3 py-2 bg-white"
+            className="border border-neutral-300 rounded-md px-3 py-2 bg-white w-full text-[#172F56]"
           />
         </div>
 
         <section className="bg-white border border-neutral-200 rounded-xl shadow-sm overflow-hidden">
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm min-w-[480px]">
             <thead className="bg-neutral-100 border-b border-neutral-200">
               <tr>
                 <th className="text-left p-3">Name</th>
@@ -98,6 +99,7 @@ export default function PlayersPage() {
               )}
             </tbody>
           </table>
+          </div>
         </section>
 
         {msg && <p className="text-sm text-red-800">{msg}</p>}

@@ -40,7 +40,7 @@ export default function LoginPage() {
             <div className="h-1 w-24 bg-gradient-to-r from-[#79CBC4] via-[#F289AE] to-[#79CBC4] mx-auto rounded-full"></div>
           </div>
           
-          <p className="text-[#5a718f] text-center mb-6 font-medium">Sign in with your email</p>
+          <p className="text-[#475569] text-center mb-6 font-medium">Sign in with your email</p>
 
           <form onSubmit={handleLogin} className="space-y-4">
             <label htmlFor="email" className="block text-sm font-semibold text-[#172F56]">
@@ -79,7 +79,7 @@ export default function LoginPage() {
           
           {/* Decorative Footer */}
           <div className="mt-8 pt-6 border-t border-[#e2e8f0] text-center">
-            <p className="text-xs text-[#5a718f]">Club Administration System</p>
+            <p className="text-xs text-[#475569]">Club Administration System</p>
           </div>
         </div>
       </div>
