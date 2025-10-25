@@ -9,19 +9,20 @@
   --kauri-taffy: #F289AE;      /* Pink */
   --kauri-seafoam: #79CBC4;    /* Teal */
   --kauri-white: #FFFFFF;
+  --kauri-black: #000000;
 
-  /* Light mode defaults: dark text on light bg */
+  /* Light mode defaults: high contrast black on white */
   --background: #FFFFFF;
-  --foreground: #0f172a;       /* readable body text */
-  --muted: #5a718f;
-  --border: #e2e8f0;
-  --ring: #79CBC4;
-  --link: #172F56;
-  --link-hover: #79CBC4;
+  --foreground: #000000;       /* Maximum contrast black text */
+  --muted: #333333;            /* Dark gray for secondary text */
+  --border: #000000;           /* Black borders for maximum definition */
+  --ring: #000000;
+  --link: #0000EE;             /* Standard blue link for high contrast */
+  --link-hover: #551A8B;       /* Visited link purple */
   --success-bg: #d1f5f2;
-  --success-fg: #0d7a6e;
+  --success-fg: #004d40;       /* Darker green for contrast */
   --error-bg: #ffd7e4;
-  --error-fg: #c41d5e;
+  --error-fg: #8B0000;         /* Dark red for contrast */
   --card: #FFFFFF;
   --input-bg: #FFFFFF;
   --accent: #F289AE;
@@ -31,19 +32,19 @@
 /* Dark mode */
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0d1a2d;
-    --foreground: #e6e8ee;     /* readable on dark bg */
-    --muted: #79CBC4;
-    --border: #2a4263;
-    --ring: #79CBC4;
-    --link: #79CBC4;
-    --link-hover: #F289AE;
+    --background: #000000;
+    --foreground: #FFFFFF;     /* Maximum contrast white text on black */
+    --muted: #CCCCCC;          /* Light gray for secondary text */
+    --border: #FFFFFF;         /* White borders for maximum definition */
+    --ring: #FFFFFF;
+    --link: #66B3FF;           /* Bright blue for visibility */
+    --link-hover: #FF99CC;     /* Bright pink for visited */
     --success-bg: #1a4d47;
-    --success-fg: #79CBC4;
+    --success-fg: #FFFFFF;
     --error-bg: #5a1f38;
-    --error-fg: #F289AE;
-    --card: #172F56;
-    --input-bg: #1e3a5f;
+    --error-fg: #FFFFFF;
+    --card: #1a1a1a;
+    --input-bg: #1a1a1a;
     --accent: #F289AE;
     --accent-hover: #ff9ec0;
   }

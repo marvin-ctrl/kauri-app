@@ -128,6 +128,14 @@ export default function EventRollPage() {
       });
   }, [rows, q]);
 
+  const tally = useMemo(() => {
+    const present = rows.filter(r => r.status === 'present').length;
+    const late = rows.filter(r => r.status === 'late').length;
+    const absent = rows.filter(r => r.status === 'absent').length;
+    const unmarked = rows.filter(r => r.status === null).length;
+    return { present, late, absent, unmarked, total: rows.length };
+  }, [rows]);
+
   function setStatus(ptid: string, status: 'present'|'absent'|'late'|null) {
     setRows(prev => prev.map(r => r.player_term_id === ptid ? { ...r, status } : r));
   }
@@ -175,62 +183,88 @@ export default function EventRollPage() {
       <div className="max-w-5xl mx-auto space-y-4">
         <header className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-extrabold tracking-tight">Take roll</h1>
-            <p className="text-sm text-neutral-700">{eventTitle} • {whenStr}</p>
+            <h1 className="text-3xl font-extrabold tracking-tight text-black">Take roll</h1>
+            <p className="text-sm text-black font-medium">{eventTitle} • {whenStr}</p>
           </div>
           <div className="flex gap-2">
-            <a href="/events" className="px-3 py-2 rounded-md bg-neutral-200 hover:bg-neutral-300 text-neutral-900 font-semibold">Back</a>
+            <a href="/events" className="px-3 py-2 rounded-md bg-neutral-200 hover:bg-neutral-300 text-black font-semibold">Back</a>
             <button onClick={save} disabled={saving} className="px-3 py-2 rounded-md bg-blue-700 hover:bg-blue-800 text-white font-semibold disabled:opacity-60">
               {saving ? 'Saving…' : 'Save'}
             </button>
           </div>
         </header>
 
+        <div className="bg-white border-2 border-black rounded-lg p-4 shadow-sm">
+          <h2 className="text-lg font-bold text-black mb-3">Attendance Summary</h2>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div className="bg-green-100 border-2 border-green-700 rounded-lg p-3 text-center">
+              <div className="text-3xl font-bold text-green-900">{tally.present}</div>
+              <div className="text-sm font-semibold text-green-900 mt-1">Present</div>
+            </div>
+            <div className="bg-amber-100 border-2 border-amber-600 rounded-lg p-3 text-center">
+              <div className="text-3xl font-bold text-amber-900">{tally.late}</div>
+              <div className="text-sm font-semibold text-amber-900 mt-1">Late</div>
+            </div>
+            <div className="bg-red-100 border-2 border-red-700 rounded-lg p-3 text-center">
+              <div className="text-3xl font-bold text-red-900">{tally.absent}</div>
+              <div className="text-sm font-semibold text-red-900 mt-1">Absent</div>
+            </div>
+            <div className="bg-neutral-100 border-2 border-neutral-400 rounded-lg p-3 text-center">
+              <div className="text-3xl font-bold text-black">{tally.unmarked}</div>
+              <div className="text-sm font-semibold text-black mt-1">Unmarked</div>
+            </div>
+            <div className="bg-blue-100 border-2 border-blue-700 rounded-lg p-3 text-center">
+              <div className="text-3xl font-bold text-blue-900">{tally.total}</div>
+              <div className="text-sm font-semibold text-blue-900 mt-1">Total</div>
+            </div>
+          </div>
+        </div>
+
         <div className="flex flex-wrap items-center gap-2">
           <input
             value={q}
             onChange={e=>setQ(e.target.value)}
             placeholder="Search by name or jersey…"
-            className="border border-neutral-300 rounded-md px-3 py-2 bg-white"
+            className="border-2 border-black rounded-md px-3 py-2 bg-white text-black font-medium flex-1 min-w-[200px]"
           />
-          <button onClick={()=>bulk('present')} className="px-2 py-1 text-sm rounded bg-neutral-800 text-white">All present</button>
-          <button onClick={()=>bulk('absent')}  className="px-2 py-1 text-sm rounded bg-neutral-200">All absent</button>
-          <button onClick={()=>bulk(null)}      className="px-2 py-1 text-sm rounded bg-neutral-200">Clear</button>
+          <button onClick={()=>bulk('present')} className="px-3 py-2 text-sm font-bold rounded bg-green-700 hover:bg-green-800 text-white border-2 border-black">All present</button>
+          <button onClick={()=>bulk('absent')}  className="px-3 py-2 text-sm font-bold rounded bg-red-700 hover:bg-red-800 text-white border-2 border-black">All absent</button>
+          <button onClick={()=>bulk(null)}      className="px-3 py-2 text-sm font-bold rounded bg-white hover:bg-neutral-100 text-black border-2 border-black">Clear all</button>
         </div>
 
-        <section className="bg-white border border-neutral-200 rounded-xl shadow-sm overflow-hidden">
+        <section className="bg-white border-2 border-black rounded-lg shadow-sm overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-neutral-100 border-b border-neutral-200">
+            <thead className="bg-black text-white">
               <tr>
-                <th className="text-left p-3">Name</th>
-                <th className="text-left p-3">Jersey</th>
-                <th className="text-left p-3">Status</th>
-                <th className="text-left p-3">Notes</th>
+                <th className="text-left p-3 font-bold">Name</th>
+                <th className="text-left p-3 font-bold">Jersey</th>
+                <th className="text-left p-3 font-bold">Status</th>
+                <th className="text-left p-3 font-bold">Notes</th>
               </tr>
             </thead>
             <tbody>
               {filtered.map(r => {
                 const name = r.preferred_name || `${r.first_name} ${r.last_name}`;
                 return (
-                  <tr key={r.player_term_id} className="border-b border-neutral-100">
-                    <td className="p-3">{name}</td>
-                    <td className="p-3">{r.jersey_no ?? '—'}</td>
+                  <tr key={r.player_term_id} className="border-b-2 border-neutral-200 hover:bg-neutral-50">
+                    <td className="p-3 font-semibold text-black">{name}</td>
+                    <td className="p-3 font-semibold text-black">{r.jersey_no ?? '—'}</td>
                     <td className="p-3">
                       <div className="inline-flex gap-1">
                         <button
                           type="button"
                           onClick={()=>setStatus(r.player_term_id,'present')}
-                          className={`px-2 py-1 rounded ${r.status==='present'?'bg-green-700 text-white':'bg-neutral-200'}`}
+                          className={`px-3 py-2 rounded font-bold border-2 ${r.status==='present'?'bg-green-700 text-white border-black':'bg-white text-black border-neutral-300 hover:border-black'}`}
                         >Present</button>
                         <button
                           type="button"
                           onClick={()=>setStatus(r.player_term_id,'late')}
-                          className={`px-2 py-1 rounded ${r.status==='late'?'bg-amber-600 text-white':'bg-neutral-200'}`}
+                          className={`px-3 py-2 rounded font-bold border-2 ${r.status==='late'?'bg-amber-600 text-white border-black':'bg-white text-black border-neutral-300 hover:border-black'}`}
                         >Late</button>
                         <button
                           type="button"
                           onClick={()=>setStatus(r.player_term_id,'absent')}
-                          className={`px-2 py-1 rounded ${r.status==='absent'?'bg-red-700 text-white':'bg-neutral-200'}`}
+                          className={`px-3 py-2 rounded font-bold border-2 ${r.status==='absent'?'bg-red-700 text-white border-black':'bg-white text-black border-neutral-300 hover:border-black'}`}
                         >Absent</button>
                       </div>
                     </td>
@@ -239,14 +273,14 @@ export default function EventRollPage() {
                         value={r.notes ?? ''}
                         onChange={e=>setNote(r.player_term_id, e.target.value)}
                         placeholder="Optional"
-                        className="w-full border border-neutral-300 rounded-md px-2 py-1 bg-white"
+                        className="w-full border-2 border-neutral-300 rounded-md px-2 py-1 bg-white text-black font-medium focus:border-black"
                       />
                     </td>
                   </tr>
                 );
               })}
               {filtered.length === 0 && (
-                <tr><td className="p-4 text-neutral-700" colSpan={4}>No players.</td></tr>
+                <tr><td className="p-4 text-black font-semibold" colSpan={4}>No players.</td></tr>
               )}
             </tbody>
           </table>

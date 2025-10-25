@@ -43,35 +43,37 @@ export default function TeamsPage() {
     <main className="min-h-screen p-6">
       <div className="max-w-3xl mx-auto space-y-4">
         <header className="flex items-center justify-between">
-          <h1 className="text-3xl font-extrabold tracking-tight">Teams</h1>
-          <Link href="/teams/new" className="px-3 py-2 rounded-md bg-blue-700 hover:bg-blue-800 text-white font-semibold">
+          <h1 className="text-3xl font-extrabold tracking-tight text-black">Teams</h1>
+          <Link href="/teams/new" className="px-3 py-2 rounded-md bg-blue-700 hover:bg-blue-800 text-white font-bold border-2 border-black">
             New team
           </Link>
         </header>
 
-        <section className="bg-white border border-neutral-200 rounded-xl shadow-sm overflow-hidden">
+        <section className="bg-white border-2 border-black rounded-lg shadow-sm overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-neutral-100 border-b border-neutral-200">
+            <thead className="bg-black text-white">
               <tr>
-                <th className="text-left p-3">Name</th>
-                <th className="text-left p-3">Actions</th>
+                <th className="text-left p-3 font-bold">Name</th>
+                <th className="text-left p-3 font-bold">Actions</th>
               </tr>
             </thead>
             <tbody>
               {rows.map(t => (
-                <tr key={t.id} className="border-b border-neutral-100 hover:bg-neutral-50">
-                  <td className="p-3">{t.name}</td>
+                <tr key={t.id} className="border-b-2 border-neutral-200 hover:bg-neutral-50">
+                  <td className="p-3 font-semibold text-black">{t.name}</td>
                   <td className="p-3">
-                    <Link href={`/teams/${t.id}/roster`} className="underline text-blue-700 hover:text-blue-800">Roster</Link>
-                    <span className="mx-2 text-neutral-300">|</span>
-                    <Link href={`/teams/${t.id}/assign`} className="underline text-blue-700 hover:text-blue-800">Assign</Link>
-                    <span className="mx-2 text-neutral-300">|</span>
-                    <button onClick={() => removeTeam(t.id)} className="text-red-700 underline">Delete</button>
+                    <Link href={`/teams/${t.id}/edit`} className="underline text-blue-700 hover:text-blue-800 font-bold">Edit</Link>
+                    <span className="mx-2 text-black">|</span>
+                    <Link href={`/teams/${t.id}/roster`} className="underline text-blue-700 hover:text-blue-800 font-bold">Roster</Link>
+                    <span className="mx-2 text-black">|</span>
+                    <Link href={`/teams/${t.id}/assign`} className="underline text-blue-700 hover:text-blue-800 font-bold">Assign</Link>
+                    <span className="mx-2 text-black">|</span>
+                    <button onClick={() => removeTeam(t.id)} className="text-red-700 underline font-bold hover:text-red-800">Delete</button>
                   </td>
                 </tr>
               ))}
               {rows.length === 0 && (
-                <tr><td className="p-4 text-neutral-700" colSpan={2}>No teams.</td></tr>
+                <tr><td className="p-4 text-black font-semibold" colSpan={2}>No teams.</td></tr>
               )}
             </tbody>
           </table>
