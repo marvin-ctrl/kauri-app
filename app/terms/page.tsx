@@ -35,7 +35,7 @@ export default function TermsPage() {
         <section className="bg-white border border-neutral-200 rounded-xl shadow-sm">
           <table className="w-full text-sm">
             <thead className="border-b border-neutral-200 bg-neutral-100">
-              <tr>
+              <tr className="text-black">
                 <th className="text-left p-3">Year</th>
                 <th className="text-left p-3">Term</th>
                 <th className="text-left p-3">Dates</th>
@@ -44,7 +44,7 @@ export default function TermsPage() {
             </thead>
             <tbody>
               {rows.map(t => (
-                <tr key={t.id} className="border-b border-neutral-100 hover:bg-neutral-50">
+                <tr key={t.id} className="border-b border-neutral-100 hover:bg-neutral-50 text-black">
                   <td className="p-3">{t.year}</td>
                   <td className="p-3">Term {t.term}</td>
                   <td className="p-3">
@@ -65,7 +65,7 @@ export default function TermsPage() {
                   </td>
                 </tr>
               ))}
-              {rows.length === 0 && <tr><td className="p-4 text-neutral-700" colSpan={4}>No terms.</td></tr>}
+              {rows.length === 0 && <tr><td className="p-4 text-black" colSpan={4}>No terms.</td></tr>}
             </tbody>
           </table>
         </section>

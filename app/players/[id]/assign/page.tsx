@@ -145,7 +145,7 @@ export default function AssignPlayerToTeamsPage() {
                 const checked = selected.has(t.id);
                 return (
                   <li key={t.id}>
-                    <label className="flex items-center gap-2 p-2 border border-neutral-200 rounded-md hover:bg-neutral-50">
+                    <label className="flex items-center gap-2 p-2 border border-neutral-200 rounded-md hover:bg-neutral-50 text-black">
                       <input
                         type="checkbox"
                         checked={checked}

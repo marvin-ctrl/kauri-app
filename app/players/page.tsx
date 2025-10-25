@@ -69,7 +69,7 @@ export default function PlayersPage() {
         <section className="bg-white border border-neutral-200 rounded-xl shadow-sm overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-neutral-100 border-b border-neutral-200">
-              <tr>
+              <tr className="text-black">
                 <th className="text-left p-3">Name</th>
                 <th className="text-left p-3">Jersey</th>
                 <th className="text-left p-3">Actions</th>
@@ -79,22 +79,22 @@ export default function PlayersPage() {
               {filtered.map(p => {
                 const name = p.preferred_name || `${p.first_name} ${p.last_name}`;
                 return (
-                  <tr key={p.id} className="border-b border-neutral-100 hover:bg-neutral-50">
+                  <tr key={p.id} className="border-b border-neutral-100 hover:bg-neutral-50 text-black">
                     <td className="p-3">{name}</td>
                     <td className="p-3">{p.jersey_no ?? '—'}</td>
                     <td className="p-3">
                       {/* REAL links using p.id */}
                       <Link href={`/players/${p.id}`} className="underline text-blue-700 hover:text-blue-800">View</Link>
-                      <span className="mx-2 text-neutral-300">|</span>
+                      <span className="mx-2 text-black">|</span>
                       <Link href={`/players/${p.id}/assign`} className="underline text-blue-700 hover:text-blue-800">Assign to teams</Link>
-                      <span className="mx-2 text-neutral-300">|</span>
+                      <span className="mx-2 text-black">|</span>
                       <Link href={`/players/${p.id}/edit`} className="underline text-blue-700 hover:text-blue-800">Edit</Link>
                     </td>
                   </tr>
                 );
               })}
               {filtered.length === 0 && (
-                <tr><td className="p-4 text-neutral-700" colSpan={3}>No players.</td></tr>
+                <tr><td className="p-4 text-black" colSpan={3}>No players.</td></tr>
               )}
             </tbody>
           </table>

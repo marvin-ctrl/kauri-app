@@ -87,7 +87,7 @@ export default function NewEventPage() {
       <div className="max-w-xl mx-auto bg-white border border-neutral-200 rounded-xl shadow-sm p-6 space-y-5">
         <header className="flex items-center justify-between">
           <h1 className="text-3xl font-extrabold tracking-tight">New event</h1>
-          <a href="/events" className="px-3 py-2 rounded-md bg-neutral-200 hover:bg-neutral-300">Cancel</a>
+          <a href="/events" className="px-3 py-2 rounded-md bg-neutral-200 hover:bg-neutral-300 text-black">Cancel</a>
         </header>
 
         <form onSubmit={onSubmit} className="space-y-4">

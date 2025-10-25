@@ -194,14 +194,14 @@ export default function EventRollPage() {
             className="border border-neutral-300 rounded-md px-3 py-2 bg-white"
           />
           <button onClick={()=>bulk('present')} className="px-2 py-1 text-sm rounded bg-neutral-800 text-white">All present</button>
-          <button onClick={()=>bulk('absent')}  className="px-2 py-1 text-sm rounded bg-neutral-200">All absent</button>
-          <button onClick={()=>bulk(null)}      className="px-2 py-1 text-sm rounded bg-neutral-200">Clear</button>
+          <button onClick={()=>bulk('absent')}  className="px-2 py-1 text-sm rounded bg-neutral-200 text-black">All absent</button>
+          <button onClick={()=>bulk(null)}      className="px-2 py-1 text-sm rounded bg-neutral-200 text-black">Clear</button>
         </div>
 
         <section className="bg-white border border-neutral-200 rounded-xl shadow-sm overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-neutral-100 border-b border-neutral-200">
-              <tr>
+              <tr className="text-black">
                 <th className="text-left p-3">Name</th>
                 <th className="text-left p-3">Jersey</th>
                 <th className="text-left p-3">Status</th>

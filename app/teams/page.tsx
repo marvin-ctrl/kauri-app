@@ -52,26 +52,26 @@ export default function TeamsPage() {
         <section className="bg-white border border-neutral-200 rounded-xl shadow-sm overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-neutral-100 border-b border-neutral-200">
-              <tr>
+              <tr className="text-black">
                 <th className="text-left p-3">Name</th>
                 <th className="text-left p-3">Actions</th>
               </tr>
             </thead>
             <tbody>
               {rows.map(t => (
-                <tr key={t.id} className="border-b border-neutral-100 hover:bg-neutral-50">
+                <tr key={t.id} className="border-b border-neutral-100 hover:bg-neutral-50 text-black">
                   <td className="p-3">{t.name}</td>
                   <td className="p-3">
                     <Link href={`/teams/${t.id}/roster`} className="underline text-blue-700 hover:text-blue-800">Roster</Link>
-                    <span className="mx-2 text-neutral-300">|</span>
+                    <span className="mx-2 text-black">|</span>
                     <Link href={`/teams/${t.id}/assign`} className="underline text-blue-700 hover:text-blue-800">Assign</Link>
-                    <span className="mx-2 text-neutral-300">|</span>
+                    <span className="mx-2 text-black">|</span>
                     <button onClick={() => removeTeam(t.id)} className="text-red-700 underline">Delete</button>
                   </td>
                 </tr>
               ))}
               {rows.length === 0 && (
-                <tr><td className="p-4 text-neutral-700" colSpan={2}>No teams.</td></tr>
+                <tr><td className="p-4 text-black" colSpan={2}>No teams.</td></tr>
               )}
             </tbody>
           </table>

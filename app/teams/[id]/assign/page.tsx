@@ -167,7 +167,7 @@ export default function AssignPlayersToTeamPage() {
                   const name = p.preferred_name || `${p.first_name} ${p.last_name}`;
                   return (
                     <li key={p.id}>
-                      <label className="flex items-center gap-2 p-2 border border-neutral-200 rounded-md hover:bg-neutral-50 cursor-pointer">
+                      <label className="flex items-center gap-2 p-2 border border-neutral-200 rounded-md hover:bg-neutral-50 text-black cursor-pointer">
                         <input
                           type="checkbox"
                           checked={checked}

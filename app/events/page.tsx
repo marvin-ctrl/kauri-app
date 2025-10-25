@@ -50,7 +50,7 @@ export default function EventsPage() {
         <section className="bg-white border border-neutral-200 rounded-xl shadow-sm overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-neutral-100 border-b border-neutral-200">
-              <tr>
+              <tr className="text-black">
                 <th className="text-left p-3">When</th>
                 <th className="text-left p-3">Type</th>
                 <th className="text-left p-3">Title</th>
@@ -77,7 +77,7 @@ export default function EventsPage() {
                 </tr>
               ))}
               {rows.length === 0 && (
-                <tr><td className="p-4 text-neutral-700" colSpan={5}>No events.</td></tr>
+                <tr><td className="p-4 text-black" colSpan={5}>No events.</td></tr>
               )}
             </tbody>
           </table>

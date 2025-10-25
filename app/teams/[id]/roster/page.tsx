@@ -195,7 +195,7 @@ export default function TeamRosterPage() {
                 return (
                   <li
                     key={row.membershipId}
-                    className="flex items-center justify-between border border-neutral-200 rounded-md p-3 hover:bg-neutral-50"
+                    className="flex items-center justify-between border border-neutral-200 rounded-md p-3 hover:bg-neutral-50 text-black"
                   >
                     <div className="text-sm">
                       <span className="font-semibold">{name}</span>
