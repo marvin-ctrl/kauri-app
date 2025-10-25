@@ -18,19 +18,26 @@ export default function TermSwitcher() {
       const { data } = await supabase.from('terms').select('id,year,term').order('year', { ascending: false }).order('term', { ascending: true });
       const list = data || [];
       setTerms(list);
-      const saved = localStorage.getItem('kauri.termId');
+      const saved = typeof window !== 'undefined' ? localStorage.getItem('kauri.termId') : null;
       const defaultId = saved && list.find(t => t.id === saved) ? saved : (list[0]?.id || '');
       if (defaultId) {
         setTermId(defaultId);
-        localStorage.setItem('kauri.termId', defaultId);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('kauri.termId', defaultId);
+        }
       }
     })();
   }, []);
 
   function change(id: string) {
     setTermId(id);
-    localStorage.setItem('kauri.termId', id);
-    location.reload(); // simplest way to refresh pages to new scope
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('kauri.termId', id);
+      // Dispatch custom event for other components to react to term change
+      window.dispatchEvent(new CustomEvent('termChanged', { detail: id }));
+      // Reload to refresh data - consider using router.refresh() in the future
+      location.reload();
+    }
   }
 
   if (!terms.length) return (

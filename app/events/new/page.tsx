@@ -10,6 +10,15 @@ const supabase = createClient(
 
 type Team = { id: string; name: string };
 
+interface EventPayload {
+  title: string | null;
+  type: 'training' | 'game' | 'tournament';
+  location: string | null;
+  starts_at: string;
+  ends_at: string | null;
+  team_term_id: string | null;
+}
+
 export default function NewEventPage() {
   const router = useRouter();
 
@@ -63,9 +72,10 @@ export default function NewEventPage() {
         }
       }
 
-      const payload: any = {
+      const payload: EventPayload = {
         title: title.trim() || null,
-        type, location: location.trim() || null,
+        type,
+        location: location.trim() || null,
         starts_at: startsAt,
         ends_at: endsAt || null,
         team_term_id: teamTermId, // null = whole-term event
@@ -75,8 +85,9 @@ export default function NewEventPage() {
       if (error || !data) throw new Error(error?.message || 'Create failed');
 
       router.replace(`/events/${data.id}/roll`);
-    } catch (err: any) {
-      setMsg(`Error: ${err.message || 'Save failed'}`);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Save failed';
+      setMsg(`Error: ${message}`);
       setSaving(false);
       return;
     }
@@ -96,7 +107,12 @@ export default function NewEventPage() {
           </label>
 
           <label className="block text-sm font-medium">Type
-            <select value={type} onChange={e=>setType(e.target.value as any)} className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white text-neutral-900">
+            <select value={type} onChange={e => {
+              const val = e.target.value;
+              if (val === 'training' || val === 'game' || val === 'tournament') {
+                setType(val);
+              }
+            }} className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white text-neutral-900">
               <option value="training">training</option>
               <option value="game">game</option>
               <option value="tournament">tournament</option>

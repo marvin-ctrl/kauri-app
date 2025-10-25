@@ -13,13 +13,22 @@ type Term = { id: string; year: number; term: number; start_date: string | null;
 export default function TermsPage() {
   const [rows, setRows] = useState<Term[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [msg, setMsg] = useState<string | null>(null);
+
+  async function load() {
+    setLoading(true);
+    setMsg(null);
+    const { data, error } = await supabase.from('terms').select('id,year,term,start_date,end_date').order('year', { ascending: false }).order('term', { ascending: true });
+    if (error) {
+      setMsg(`Error loading terms: ${error.message}`);
+    }
+    setRows(data || []);
+    setLoading(false);
+  }
 
   useEffect(() => {
-    (async () => {
-      const { data } = await supabase.from('terms').select('id,year,term,start_date,end_date').order('year', { ascending: false }).order('term', { ascending: true });
-      setRows(data || []);
-      setLoading(false);
-    })();
+    load();
   }, []);
 
   if (loading) return <main className="min-h-screen grid place-items-center">Loading…</main>;
@@ -54,13 +63,25 @@ export default function TermsPage() {
                   <td className="p-3">
                     <Link href={`/terms/${t.id}/edit`} className="underline text-blue-700 hover:text-blue-800">Edit</Link>
                     <button
-                      onClick={async () => { if (!confirm('Delete this term?')) return;
-                        await supabase.from('terms').delete().eq('id', t.id);
-                        location.reload();
+                      onClick={async () => {
+                        if (!confirm('Delete this term?')) return;
+                        setDeletingId(t.id);
+                        setMsg(null);
+                        try {
+                          const { error } = await supabase.from('terms').delete().eq('id', t.id);
+                          if (error) throw error;
+                          await load();
+                        } catch (err) {
+                          const message = err instanceof Error ? err.message : 'Unknown error';
+                          setMsg(`Error deleting term: ${message}`);
+                        } finally {
+                          setDeletingId(null);
+                        }
                       }}
-                      className="ml-3 text-red-700 underline"
+                      disabled={deletingId === t.id}
+                      className="ml-3 text-red-700 underline disabled:opacity-50"
                     >
-                      Delete
+                      {deletingId === t.id ? 'Deleting...' : 'Delete'}
                     </button>
                   </td>
                 </tr>
@@ -69,6 +90,8 @@ export default function TermsPage() {
             </tbody>
           </table>
         </section>
+
+        {msg && <p className="text-sm text-red-800">{msg}</p>}
       </div>
     </main>
   );

@@ -86,15 +86,17 @@ export default function EventRollPage() {
       }
 
       // seed rows
-      const base: PlayerRow[] = pts.map((pt: any) => ({
-        player_term_id: pt.id,
-        first_name: pt.players.first_name,
-        last_name: pt.players.last_name,
-        preferred_name: pt.players.preferred_name,
-        jersey_no: pt.players.jersey_no,
-        status: null,
-        notes: null
-      }));
+      const base: PlayerRow[] = pts
+        .filter((pt: any) => pt && pt.players)
+        .map((pt: any) => ({
+          player_term_id: pt.id,
+          first_name: pt.players.first_name,
+          last_name: pt.players.last_name,
+          preferred_name: pt.players.preferred_name,
+          jersey_no: pt.players.jersey_no,
+          status: null,
+          notes: null
+        }));
 
       // load any existing attendance for this event
       const att = await supabase

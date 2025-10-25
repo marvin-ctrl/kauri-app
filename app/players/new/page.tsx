@@ -31,12 +31,20 @@ export default function NewPlayerPage() {
     if (pErr || !pData) { setMsg(`Error: ${pErr?.message}`); setSaving(false); return; }
 
     if (guardianName.trim() || guardianEmail.trim() || guardianPhone.trim()) {
-      const { data: g } = await supabase.from('guardians')
+      const { data: g, error: gErr } = await supabase.from('guardians')
         .insert({ name: guardianName.trim(), email: guardianEmail.trim() || null, phone: guardianPhone.trim() || null })
         .select('id').single();
-      if (g) {
-        await supabase.from('guardian_players')
-          .insert({ player_id: pData.id, guardian_id: g.id, primary_contact: true });
+      if (gErr || !g) {
+        setMsg(`Error creating guardian: ${gErr?.message || 'Unknown error'}`);
+        setSaving(false);
+        return;
+      }
+      const { error: gpErr } = await supabase.from('guardian_players')
+        .insert({ player_id: pData.id, guardian_id: g.id, primary_contact: true });
+      if (gpErr) {
+        setMsg(`Error linking guardian: ${gpErr.message}`);
+        setSaving(false);
+        return;
       }
     }
 
@@ -76,7 +84,7 @@ export default function NewPlayerPage() {
             </label>
             <label className="block text-sm font-medium">
               Jersey #
-              <input type="number" min={0} className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white text-neutral-900"
+              <input type="number" min={1} className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white text-neutral-900"
                 value={jersey} onChange={e=>setJersey(e.target.value === '' ? '' : Number(e.target.value))} />
             </label>
           </div>

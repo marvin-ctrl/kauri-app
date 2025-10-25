@@ -48,7 +48,8 @@ export default function EditEventPage() {
       setType(ev.type);
       setTitle(ev.title ?? '');
       setLocation(ev.location ?? '');
-      const s = new Date(ev.starts_at); const e = new Date(ev.ends_at);
+      const s = new Date(ev.starts_at);
+      const e = ev.ends_at ? new Date(ev.ends_at) : new Date();
       setStartDate(toDateInput(s)); setStartTime(toTimeInput(s));
       setEndDate(toDateInput(e));   setEndTime(toTimeInput(e));
       setLoading(false);
