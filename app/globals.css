@@ -64,8 +64,8 @@ body {
   line-height: 1.5;
 }
 
-/* Ensure readable text on light surfaces */
-header, nav, main, section, .card, .bg-white, .bg-neutral-50, .bg-neutral-100 {
+/* Ensure readable text on specific light card backgrounds */
+.card {
   color: var(--foreground);
 }
 
@@ -162,6 +162,7 @@ textarea:focus {
 
 /* Utilities */
 .container { max-width: 64rem; margin-inline: auto; padding: 1.5rem; }
+.font-brand { font-family: 'Oswald', sans-serif; }
 .bg-midnight { background-color: var(--kauri-midnight); }
 .bg-taffy    { background-color: var(--kauri-taffy); }
 .bg-seafoam  { background-color: var(--kauri-seafoam); }

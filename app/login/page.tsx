@@ -1,17 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+import { useSupabase } from '@/lib/supabase';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const supabase = useSupabase();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,7 +30,7 @@ export default function LoginPage() {
         <div className="bg-white border-2 border-[#79CBC4] rounded-2xl shadow-2xl p-8">
           {/* Logo/Brand Header */}
           <div className="text-center mb-8">
-            <h1 className="text-4xl font-extrabold tracking-tight text-[#172F56] mb-2" style={{ fontFamily: 'Oswald, sans-serif' }}>
+            <h1 className="text-4xl font-extrabold tracking-tight text-[#172F56] mb-2 font-brand">
               KAURI FUTSAL
             </h1>
             <div className="h-1 w-24 bg-gradient-to-r from-[#79CBC4] via-[#F289AE] to-[#79CBC4] mx-auto rounded-full"></div>
