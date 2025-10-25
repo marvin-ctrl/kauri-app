@@ -2,27 +2,44 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+import { useRouter } from 'next/navigation';
+import { useSupabase } from '@/lib/supabase';
 
 export default function DashboardPage() {
   const [email, setEmail] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
+  const router = useRouter();
+  const supabase = useSupabase();
 
   useEffect(() => {
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { window.location.href = '/login'; return; }
+      const { data: { user }, error } = await supabase.auth.getUser();
+
+      // Handle errors (network issues, etc.)
+      if (error) {
+        console.error('Auth error:', error);
+        router.push('/login');
+        return;
+      }
+
+      // Handle not authenticated
+      if (!user) {
+        router.push('/login');
+        return;
+      }
+
       setEmail(user.email ?? null);
       setReady(true);
     })();
-  }, []);
+  }, [router, supabase]);
 
-  if (!ready) return <main className="min-h-screen grid place-items-center bg-gradient-to-br from-[#172F56] to-[#79CBC4]"><div className="text-white text-xl">Loading…</div></main>;
+  if (!ready) {
+    return (
+      <main className="min-h-screen grid place-items-center bg-gradient-to-br from-[#172F56] to-[#79CBC4]">
+        <div className="text-white text-xl">Loading…</div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen p-6 bg-gradient-to-br from-white via-[#f8fffe] to-[#f0faf9]">

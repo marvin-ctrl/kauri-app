@@ -1,15 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { createClient } from '@supabase/supabase-js';
+import { usePathname, useRouter } from 'next/navigation';
 import { useCallback } from 'react';
 import TermSwitcher from './TermSwitcher';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+import { useSupabase } from '@/lib/supabase';
 
 function NavLink({ href, label }: { href: string; label: string }) {
   const pathname = usePathname();
@@ -31,10 +26,13 @@ function NavLink({ href, label }: { href: string; label: string }) {
 }
 
 export default function Nav() {
+  const router = useRouter();
+  const supabase = useSupabase();
+
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
-    window.location.href = '/login';
-  }, []);
+    router.push('/login');
+  }, [router, supabase]);
 
   return (
     <nav className="w-full border-b border-[#e2e8f0] bg-white shadow-sm">
