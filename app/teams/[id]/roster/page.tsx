@@ -159,7 +159,7 @@ export default function TeamRosterPage() {
         <header className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-extrabold tracking-tight">{team?.name || 'Team'}</h1>
-            <p className="text-sm text-neutral-700">Roster</p>
+            <p className="text-sm text-neutral-800">Roster</p>
           </div>
           <div className="flex gap-2">
             <a
@@ -180,7 +180,7 @@ export default function TeamRosterPage() {
         <section className="bg-white border border-neutral-200 rounded-xl shadow-sm p-6">
           {roster.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-neutral-700 mb-4">No players on this team for the current term.</p>
+              <p className="text-neutral-800 mb-4">No players on this team for the current term.</p>
               <a
                 href={`/teams/${teamId}/assign`}
                 className="inline-block px-4 py-2 rounded-md bg-blue-700 hover:bg-blue-800 text-white font-semibold"
@@ -200,10 +200,10 @@ export default function TeamRosterPage() {
                     <div className="text-sm">
                       <span className="font-semibold">{name}</span>
                       {row.jerseyNo != null && (
-                        <span className="ml-2 text-neutral-700">#{row.jerseyNo}</span>
+                        <span className="ml-2 text-neutral-800">#{row.jerseyNo}</span>
                       )}
                       {row.role && row.role !== 'player' && (
-                        <span className="ml-2 text-neutral-700">• {row.role}</span>
+                        <span className="ml-2 text-neutral-800">• {row.role}</span>
                       )}
                     </div>
                     <div className="flex items-center gap-2">

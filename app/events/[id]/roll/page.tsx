@@ -176,7 +176,7 @@ export default function EventRollPage() {
         <header className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-extrabold tracking-tight">Take roll</h1>
-            <p className="text-sm text-neutral-700">{eventTitle} • {whenStr}</p>
+            <p className="text-sm text-neutral-800">{eventTitle} • {whenStr}</p>
           </div>
           <div className="flex gap-2">
             <a href="/events" className="px-3 py-2 rounded-md bg-neutral-200 hover:bg-neutral-300 text-neutral-900 font-semibold">Back</a>
@@ -191,11 +191,11 @@ export default function EventRollPage() {
             value={q}
             onChange={e=>setQ(e.target.value)}
             placeholder="Search by name or jersey…"
-            className="border border-neutral-300 rounded-md px-3 py-2 bg-white"
+            className="border border-neutral-300 rounded-md px-3 py-2 bg-white text-neutral-900"
           />
-          <button onClick={()=>bulk('present')} className="px-2 py-1 text-sm rounded bg-neutral-800 text-white">All present</button>
-          <button onClick={()=>bulk('absent')}  className="px-2 py-1 text-sm rounded bg-neutral-200">All absent</button>
-          <button onClick={()=>bulk(null)}      className="px-2 py-1 text-sm rounded bg-neutral-200">Clear</button>
+          <button onClick={()=>bulk('present')} className="px-2 py-1 text-sm rounded font-semibold bg-neutral-800 text-white">All present</button>
+          <button onClick={()=>bulk('absent')}  className="px-2 py-1 text-sm rounded font-semibold bg-neutral-200 text-neutral-900">All absent</button>
+          <button onClick={()=>bulk(null)}      className="px-2 py-1 text-sm rounded font-semibold bg-neutral-200 text-neutral-900">Clear</button>
         </div>
 
         <section className="bg-white border border-neutral-200 rounded-xl shadow-sm overflow-hidden">
@@ -220,17 +220,17 @@ export default function EventRollPage() {
                         <button
                           type="button"
                           onClick={()=>setStatus(r.player_term_id,'present')}
-                          className={`px-2 py-1 rounded ${r.status==='present'?'bg-green-700 text-white':'bg-neutral-200'}`}
+                          className={`px-2 py-1 rounded font-semibold ${r.status==='present'?'bg-green-700 text-white':'bg-neutral-200 text-neutral-900'}`}
                         >Present</button>
                         <button
                           type="button"
                           onClick={()=>setStatus(r.player_term_id,'late')}
-                          className={`px-2 py-1 rounded ${r.status==='late'?'bg-amber-600 text-white':'bg-neutral-200'}`}
+                          className={`px-2 py-1 rounded font-semibold ${r.status==='late'?'bg-amber-600 text-white':'bg-neutral-200 text-neutral-900'}`}
                         >Late</button>
                         <button
                           type="button"
                           onClick={()=>setStatus(r.player_term_id,'absent')}
-                          className={`px-2 py-1 rounded ${r.status==='absent'?'bg-red-700 text-white':'bg-neutral-200'}`}
+                          className={`px-2 py-1 rounded font-semibold ${r.status==='absent'?'bg-red-700 text-white':'bg-neutral-200 text-neutral-900'}`}
                         >Absent</button>
                       </div>
                     </td>
@@ -246,7 +246,7 @@ export default function EventRollPage() {
                 );
               })}
               {filtered.length === 0 && (
-                <tr><td className="p-4 text-neutral-700" colSpan={4}>No players.</td></tr>
+                <tr><td className="p-4 text-neutral-800" colSpan={4}>No players.</td></tr>
               )}
             </tbody>
           </table>

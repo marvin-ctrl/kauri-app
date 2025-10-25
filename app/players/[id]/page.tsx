@@ -65,23 +65,23 @@ export default function PlayerProfilePage() {
         <section className="bg-white border border-neutral-200 rounded-xl shadow-sm p-6">
           <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
             <div>
-              <dt className="text-neutral-600">First name</dt>
+              <dt className="text-neutral-700">First name</dt>
               <dd className="font-semibold">{p.first_name}</dd>
             </div>
             <div>
-              <dt className="text-neutral-600">Last name</dt>
+              <dt className="text-neutral-700">Last name</dt>
               <dd className="font-semibold">{p.last_name}</dd>
             </div>
             <div>
-              <dt className="text-neutral-600">Preferred name</dt>
+              <dt className="text-neutral-700">Preferred name</dt>
               <dd className="font-semibold">{p.preferred_name ?? '—'}</dd>
             </div>
             <div>
-              <dt className="text-neutral-600">Jersey</dt>
+              <dt className="text-neutral-700">Jersey</dt>
               <dd className="font-semibold">{p.jersey_no ?? '—'}</dd>
             </div>
             <div className="sm:col-span-2">
-              <dt className="text-neutral-600">Date of birth</dt>
+              <dt className="text-neutral-700">Date of birth</dt>
               <dd className="font-semibold">{p.dob ?? '—'}</dd>
             </div>
           </dl>

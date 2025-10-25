@@ -130,7 +130,7 @@ export default function EditPlayerPage() {
                 required
                 value={firstName}
                 onChange={e=>setFirst(e.target.value)}
-                className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white"
+                className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white text-neutral-900"
               />
             </label>
             <label className="block text-sm font-medium">
@@ -139,7 +139,7 @@ export default function EditPlayerPage() {
                 required
                 value={lastName}
                 onChange={e=>setLast(e.target.value)}
-                className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white"
+                className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white text-neutral-900"
               />
             </label>
           </div>
@@ -150,7 +150,7 @@ export default function EditPlayerPage() {
               <input
                 value={preferred}
                 onChange={e=>setPreferred(e.target.value)}
-                className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white"
+                className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white text-neutral-900"
               />
             </label>
             <label className="block text-sm font-medium">
@@ -159,7 +159,7 @@ export default function EditPlayerPage() {
                 type="date"
                 value={dob}
                 onChange={e=>setDob(e.target.value)}
-                className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white"
+                className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white text-neutral-900"
               />
             </label>
             <label className="block text-sm font-medium">
@@ -169,7 +169,7 @@ export default function EditPlayerPage() {
                 min={0}
                 value={jersey}
                 onChange={e=>setJersey(e.target.value === '' ? '' : Number(e.target.value))}
-                className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white"
+                className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white text-neutral-900"
               />
             </label>
           </div>
@@ -179,7 +179,7 @@ export default function EditPlayerPage() {
             <select
               value={status}
               onChange={e=>setStatus(e.target.value)}
-              className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white"
+              className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white text-neutral-900"
             >
               <option value="prospect">Prospect</option>
               <option value="active">Active</option>
@@ -194,7 +194,7 @@ export default function EditPlayerPage() {
               value={photoUrl}
               onChange={e=>setPhotoUrl(e.target.value)}
               placeholder="https://…"
-              className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white"
+              className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white text-neutral-900"
             />
           </label>
 
@@ -204,7 +204,7 @@ export default function EditPlayerPage() {
               rows={5}
               value={notes}
               onChange={e=>setNotes(e.target.value)}
-              className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white"
+              className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white text-neutral-900"
             />
           </label>
 

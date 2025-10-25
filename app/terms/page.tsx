@@ -65,7 +65,7 @@ export default function TermsPage() {
                   </td>
                 </tr>
               ))}
-              {rows.length === 0 && <tr><td className="p-4 text-neutral-700" colSpan={4}>No terms.</td></tr>}
+              {rows.length === 0 && <tr><td className="p-4 text-neutral-800" colSpan={4}>No terms.</td></tr>}
             </tbody>
           </table>
         </section>

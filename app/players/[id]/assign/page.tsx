@@ -156,7 +156,7 @@ export default function AssignPlayerToTeamsPage() {
                   </li>
                 );
               })}
-              {teams.length === 0 && <li className="text-sm text-neutral-700">No teams yet.</li>}
+              {teams.length === 0 && <li className="text-sm text-neutral-800">No teams yet.</li>}
             </ul>
           </fieldset>
 
@@ -192,7 +192,7 @@ export default function AssignPlayerToTeamsPage() {
               type="date"
               value={joinedAt}
               onChange={e => setJoinedAt(e.target.value)}
-              className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white"
+              className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white text-neutral-900"
             />
           </label>
 

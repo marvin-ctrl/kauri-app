@@ -53,12 +53,12 @@ export default function NewPlayerPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <label className="block text-sm font-medium">
               First name
-              <input className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white" required
+              <input className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white text-neutral-900" required
                 value={firstName} onChange={e=>setFirst(e.target.value)} />
             </label>
             <label className="block text-sm font-medium">
               Last name
-              <input className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white" required
+              <input className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white text-neutral-900" required
                 value={lastName} onChange={e=>setLast(e.target.value)} />
             </label>
           </div>
@@ -66,24 +66,24 @@ export default function NewPlayerPage() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <label className="block text-sm font-medium">
               Preferred name
-              <input className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white"
+              <input className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white text-neutral-900"
                 value={preferred} onChange={e=>setPreferred(e.target.value)} />
             </label>
             <label className="block text-sm font-medium">
               Date of birth
-              <input type="date" className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white"
+              <input type="date" className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white text-neutral-900"
                 value={dob} onChange={e=>setDob(e.target.value)} />
             </label>
             <label className="block text-sm font-medium">
               Jersey #
-              <input type="number" min={0} className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white"
+              <input type="number" min={0} className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white text-neutral-900"
                 value={jersey} onChange={e=>setJersey(e.target.value === '' ? '' : Number(e.target.value))} />
             </label>
           </div>
 
           <label className="block text-sm font-medium">
             Status
-            <select className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white"
+            <select className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white text-neutral-900"
               value={status} onChange={e=>setStatus(e.target.value)}>
               <option value="prospect">Prospect</option>
               <option value="active">Active</option>
@@ -97,17 +97,17 @@ export default function NewPlayerPage() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <label className="block text-sm font-medium">
                 Name
-                <input className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white"
+                <input className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white text-neutral-900"
                   value={guardianName} onChange={e=>setGName(e.target.value)} />
               </label>
               <label className="block text-sm font-medium">
                 Email
-                <input type="email" className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white"
+                <input type="email" className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white text-neutral-900"
                   value={guardianEmail} onChange={e=>setGEmail(e.target.value)} />
               </label>
               <label className="block text-sm font-medium">
                 Phone
-                <input className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white"
+                <input className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white text-neutral-900"
                   value={guardianPhone} onChange={e=>setGPhone(e.target.value)} />
               </label>
             </div>

@@ -65,20 +65,20 @@ export default function EditTermPage() {
         <form onSubmit={save} className="space-y-4">
           <label className="block text-sm font-medium">
             Year
-            <input type="number" value={year} onChange={e=>setYear(Number(e.target.value))} className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white"/>
+            <input type="number" value={year} onChange={e=>setYear(Number(e.target.value))} className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white text-neutral-900"/>
           </label>
           <label className="block text-sm font-medium">
             Term (1–4)
-            <input type="number" min={1} max={4} value={term} onChange={e=>setTerm(Number(e.target.value))} className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white"/>
+            <input type="number" min={1} max={4} value={term} onChange={e=>setTerm(Number(e.target.value))} className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white text-neutral-900"/>
           </label>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <label className="block text-sm font-medium">
               Start date
-              <input type="date" value={start} onChange={e=>setStart(e.target.value)} className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white"/>
+              <input type="date" value={start} onChange={e=>setStart(e.target.value)} className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white text-neutral-900"/>
             </label>
             <label className="block text-sm font-medium">
               End date
-              <input type="date" value={end} onChange={e=>setEnd(e.target.value)} className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white"/>
+              <input type="date" value={end} onChange={e=>setEnd(e.target.value)} className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white text-neutral-900"/>
             </label>
           </div>
 

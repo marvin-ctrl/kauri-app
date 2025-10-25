@@ -62,7 +62,7 @@ export default function PlayersPage() {
             value={q}
             onChange={e=>setQ(e.target.value)}
             placeholder="Search by name or jersey…"
-            className="border border-neutral-300 rounded-md px-3 py-2 bg-white"
+            className="border border-neutral-300 rounded-md px-3 py-2 bg-white text-neutral-900"
           />
         </div>
 
@@ -85,16 +85,16 @@ export default function PlayersPage() {
                     <td className="p-3">
                       {/* REAL links using p.id */}
                       <Link href={`/players/${p.id}`} className="underline text-blue-700 hover:text-blue-800">View</Link>
-                      <span className="mx-2 text-neutral-300">|</span>
+                      <span className="mx-2 text-neutral-400">|</span>
                       <Link href={`/players/${p.id}/assign`} className="underline text-blue-700 hover:text-blue-800">Assign to teams</Link>
-                      <span className="mx-2 text-neutral-300">|</span>
+                      <span className="mx-2 text-neutral-400">|</span>
                       <Link href={`/players/${p.id}/edit`} className="underline text-blue-700 hover:text-blue-800">Edit</Link>
                     </td>
                   </tr>
                 );
               })}
               {filtered.length === 0 && (
-                <tr><td className="p-4 text-neutral-700" colSpan={3}>No players.</td></tr>
+                <tr><td className="p-4 text-neutral-800" colSpan={3}>No players.</td></tr>
               )}
             </tbody>
           </table>

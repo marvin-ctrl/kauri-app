@@ -92,11 +92,11 @@ export default function NewEventPage() {
 
         <form onSubmit={onSubmit} className="space-y-4">
           <label className="block text-sm font-medium">Title
-            <input value={title} onChange={e=>setTitle(e.target.value)} className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white"/>
+            <input value={title} onChange={e=>setTitle(e.target.value)} className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white text-neutral-900"/>
           </label>
 
           <label className="block text-sm font-medium">Type
-            <select value={type} onChange={e=>setType(e.target.value as any)} className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white">
+            <select value={type} onChange={e=>setType(e.target.value as any)} className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white text-neutral-900">
               <option value="training">training</option>
               <option value="game">game</option>
               <option value="tournament">tournament</option>
@@ -104,17 +104,17 @@ export default function NewEventPage() {
           </label>
 
           <label className="block text-sm font-medium">Location
-            <input value={location} onChange={e=>setLocation(e.target.value)} className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white"/>
+            <input value={location} onChange={e=>setLocation(e.target.value)} className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white text-neutral-900"/>
           </label>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <label className="block text-sm font-medium">Starts at
               <input type="datetime-local" value={startsAt} onChange={e=>setStartsAt(e.target.value)}
-                className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white" required/>
+                className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white text-neutral-900" required/>
             </label>
             <label className="block text-sm font-medium">Ends at
               <input type="datetime-local" value={endsAt} onChange={e=>setEndsAt(e.target.value)}
-                className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white"/>
+                className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white text-neutral-900"/>
             </label>
           </div>
 
@@ -127,7 +127,7 @@ export default function NewEventPage() {
               </label>
               {scope==='team' && (
                 <select value={teamId} onChange={e=>setTeamId(e.target.value)}
-                        className="w-full border border-neutral-300 rounded-md px-3 py-2 bg-white">
+                        className="w-full border border-neutral-300 rounded-md px-3 py-2 bg-white text-neutral-900">
                   <option value="">Select team…</option>
                   {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                 </select>

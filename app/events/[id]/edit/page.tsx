@@ -85,13 +85,13 @@ export default function EditEventPage() {
           <label className="block text-sm font-medium">
             Team
             <select value={teamId} onChange={(e)=>setTeamId(e.target.value)}
-              className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white"/>
+              className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white text-neutral-900"/>
           </label>
 
           <label className="block text-sm font-medium">
             Type
             <select value={type} onChange={(e)=>setType(e.target.value as any)}
-              className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white">
+              className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white text-neutral-900">
               <option value="training">Training</option>
               <option value="game">Game</option>
               <option value="tournament">Tournament</option>
@@ -100,13 +100,13 @@ export default function EditEventPage() {
 
           <label className="block text-sm font-medium">
             Title (optional)
-            <input className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white"
+            <input className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white text-neutral-900"
               value={title} onChange={e=>setTitle(e.target.value)} />
           </label>
 
           <label className="block text-sm font-medium">
             Location
-            <input className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white"
+            <input className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white text-neutral-900"
               value={location} onChange={e=>setLocation(e.target.value)} />
           </label>
 
@@ -115,13 +115,13 @@ export default function EditEventPage() {
               Start date
               <input type="date" required value={startDate}
                 onChange={e=>setStartDate(e.target.value)}
-                className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white"/>
+                className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white text-neutral-900"/>
             </label>
             <label className="block text-sm font-medium">
               Start time
               <input type="time" required value={startTime}
                 onChange={e=>setStartTime(e.target.value)}
-                className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white"/>
+                className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white text-neutral-900"/>
             </label>
           </div>
 
@@ -130,13 +130,13 @@ export default function EditEventPage() {
               End date
               <input type="date" required value={endDate}
                 onChange={e=>setEndDate(e.target.value)}
-                className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white"/>
+                className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white text-neutral-900"/>
             </label>
             <label className="block text-sm font-medium">
               End time
               <input type="time" required value={endTime}
                 onChange={e=>setEndTime(e.target.value)}
-                className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white"/>
+                className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white text-neutral-900"/>
             </label>
           </div>
 

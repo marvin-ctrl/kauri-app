@@ -147,7 +147,7 @@ export default function AssignPlayersToTeamPage() {
         <header className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-extrabold tracking-tight">Assign players</h1>
-            <p className="text-sm text-neutral-700">{team?.name || 'Team'}</p>
+            <p className="text-sm text-neutral-800">{team?.name || 'Team'}</p>
           </div>
           <a
             href={`/teams/${teamId}/roster`}
@@ -179,7 +179,7 @@ export default function AssignPlayersToTeamPage() {
                   );
                 })}
                 {players.length === 0 && (
-                  <li className="text-sm text-neutral-700">No players yet.</li>
+                  <li className="text-sm text-neutral-800">No players yet.</li>
                 )}
               </ul>
             </div>

@@ -60,7 +60,7 @@ export default function NewTeamPage() {
               required
               value={name}
               onChange={e=>setName(e.target.value)}
-              className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white"
+              className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white text-neutral-900"
               placeholder="U12 Tigers, Seniors, etc."
             />
           </label>

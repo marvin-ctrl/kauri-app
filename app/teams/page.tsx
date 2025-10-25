@@ -63,15 +63,15 @@ export default function TeamsPage() {
                   <td className="p-3">{t.name}</td>
                   <td className="p-3">
                     <Link href={`/teams/${t.id}/roster`} className="underline text-blue-700 hover:text-blue-800">Roster</Link>
-                    <span className="mx-2 text-neutral-300">|</span>
+                    <span className="mx-2 text-neutral-400">|</span>
                     <Link href={`/teams/${t.id}/assign`} className="underline text-blue-700 hover:text-blue-800">Assign</Link>
-                    <span className="mx-2 text-neutral-300">|</span>
+                    <span className="mx-2 text-neutral-400">|</span>
                     <button onClick={() => removeTeam(t.id)} className="text-red-700 underline">Delete</button>
                   </td>
                 </tr>
               ))}
               {rows.length === 0 && (
-                <tr><td className="p-4 text-neutral-700" colSpan={2}>No teams.</td></tr>
+                <tr><td className="p-4 text-neutral-800" colSpan={2}>No teams.</td></tr>
               )}
             </tbody>
           </table>
