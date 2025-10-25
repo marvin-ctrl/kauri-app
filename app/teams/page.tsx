@@ -14,15 +14,19 @@ type Team = { id: string; name: string };
 export default function TeamsPage() {
   const [rows, setRows] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
 
   async function load() {
     setLoading(true);
+    setMsg(null);
     const { data, error } = await supabase
       .from('teams')
       .select('id,name')
       .order('name', { ascending: true });
-    if (error) setMsg(error.message);
+    if (error) {
+      setMsg(`Error loading teams: ${error.message}`);
+    }
     setRows(data || []);
     setLoading(false);
   }
@@ -30,11 +34,19 @@ export default function TeamsPage() {
   useEffect(() => { load(); }, []);
 
   async function removeTeam(id: string) {
-    setMsg(null);
     if (!confirm('Delete this team? Related memberships and team-term shells will be removed.')) return;
-    const { error } = await supabase.from('teams').delete().eq('id', id);
-    if (error) { setMsg(`Error: ${error.message}`); return; }
-    await load();
+    setDeletingId(id);
+    setMsg(null);
+    try {
+      const { error } = await supabase.from('teams').delete().eq('id', id);
+      if (error) throw error;
+      await load();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      setMsg(`Error deleting team: ${message}`);
+    } finally {
+      setDeletingId(null);
+    }
   }
 
   if (loading) return <main className="min-h-screen grid place-items-center">Loading…</main>;
@@ -66,7 +78,13 @@ export default function TeamsPage() {
                     <span className="mx-2 text-neutral-400">|</span>
                     <Link href={`/teams/${t.id}/assign`} className="underline text-blue-700 hover:text-blue-800">Assign</Link>
                     <span className="mx-2 text-neutral-400">|</span>
-                    <button onClick={() => removeTeam(t.id)} className="text-red-700 underline">Delete</button>
+                    <button
+                      onClick={() => removeTeam(t.id)}
+                      disabled={deletingId === t.id}
+                      className="text-red-700 underline disabled:opacity-50"
+                    >
+                      {deletingId === t.id ? 'Deleting...' : 'Delete'}
+                    </button>
                   </td>
                 </tr>
               ))}

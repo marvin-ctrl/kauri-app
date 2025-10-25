@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { createClient } from '@supabase/supabase-js';
 
@@ -38,12 +38,14 @@ export default function PlayersPage() {
 
   useEffect(() => { load(); }, []);
 
-  const filtered = rows.filter(p => {
+  const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
-    if (!term) return true;
-    const name = `${p.first_name} ${p.last_name} ${p.preferred_name || ''}`.toLowerCase();
-    return name.includes(term) || String(p.jersey_no ?? '').includes(term);
-  });
+    if (!term) return rows;
+    return rows.filter(p => {
+      const name = `${p.first_name} ${p.last_name} ${p.preferred_name || ''}`.toLowerCase();
+      return name.includes(term) || String(p.jersey_no ?? '').includes(term);
+    });
+  }, [rows, q]);
 
   if (loading) return <main className="min-h-screen grid place-items-center">Loading…</main>;
 
