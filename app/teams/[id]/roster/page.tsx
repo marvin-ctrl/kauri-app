@@ -124,7 +124,7 @@ export default function TeamRosterPage() {
 
       // 6a. Get payment data for all players in this team/term
       const { data: payments } = await supabase
-        .from('payments')
+        .from('player_payments')
         .select('id, player_id, amount_paid, paid, payment_date')
         .eq('team_id', teamId)
         .eq('term_id', currentTermId)
@@ -198,7 +198,7 @@ export default function TeamRosterPage() {
       if (paymentId) {
         // Update existing payment
         const { error } = await supabase
-          .from('payments')
+          .from('player_payments')
           .update({
             paid: !currentPaid,
             payment_date: !currentPaid ? new Date().toISOString().split('T')[0] : null,
@@ -210,7 +210,7 @@ export default function TeamRosterPage() {
       } else {
         // Create new payment record
         const { error } = await supabase
-          .from('payments')
+          .from('player_payments')
           .insert({
             player_id: playerId,
             team_id: teamId,
