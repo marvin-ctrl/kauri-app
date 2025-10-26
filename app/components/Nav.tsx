@@ -49,6 +49,7 @@ export default function Nav() {
             <NavLink href="/events" label="Events" />
             <NavLink href="/players" label="Players" />
             <NavLink href="/teams" label="Teams" />
+            <NavLink href="/payments" label="Payments" />
             <NavLink href="/terms" label="Terms" />
           </div>
         </div>
