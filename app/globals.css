@@ -1,3 +1,4 @@
+/* Kauri Futsal - Global Styles */
 /* If you're on Tailwind v4 keep this line. If v3, replace with:
    @tailwind base; @tailwind components; @tailwind utilities; */
 @import "tailwindcss";
@@ -58,10 +59,12 @@
   }
 }
 
-/* ---- Base ---- */
+/* ---- Base Styles ---- */
 *,
 *::before,
-*::after { box-sizing: border-box; }
+*::after {
+  box-sizing: border-box;
+}
 
 body {
   margin: 0;
@@ -93,16 +96,30 @@ body {
   font-family: var(--font-heading), system-ui, sans-serif;
 }
 
-a { color: var(--link); text-decoration: none; }
-a:hover { color: var(--link-hover); }
+a {
+  color: var(--link);
+  text-decoration: none;
+}
 
-input, textarea, select {
+a:hover {
+  color: var(--link-hover);
+}
+
+input,
+textarea,
+select {
   font-family: inherit;
   font-size: inherit;
   line-height: inherit;
   color: inherit;
 }
 
-button { cursor: pointer; font-family: inherit; }
+button {
+  cursor: pointer;
+  font-family: inherit;
+}
 
-h1, h2, h3, h4, h5, h6 { margin: 0; line-height: 1.2; }
+h1, h2, h3, h4, h5, h6 {
+  margin: 0;
+  line-height: 1.2;
+}
