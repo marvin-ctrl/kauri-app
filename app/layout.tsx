@@ -1,6 +1,7 @@
 import './globals.css';
 import type { Metadata } from 'next';
 import Nav from './components/Nav';
+import { ToastProvider } from './components/ToastProvider';
 import { Oswald, Poppins } from 'next/font/google';
 
 const oswald = Oswald({ 
@@ -24,8 +25,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body className={`${poppins.variable} ${oswald.variable} font-body bg-[var(--bg)] text-[var(--fg)]`}>
-        <Nav />
-        <div>{children}</div>
+        <ToastProvider>
+          <Nav />
+          <div>{children}</div>
+        </ToastProvider>
       </body>
     </html>
   );
