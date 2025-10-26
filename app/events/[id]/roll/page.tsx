@@ -1,3 +1,5 @@
+'use client';
+
 import { ReactNode, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
