@@ -2,12 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+import Image from 'next/image';
+import { supabase } from '@/lib/supabase';
+import { getPlayerPhotoSignedUrl } from '@/lib/storage';
 
 type Player = {
   id: string;
@@ -16,10 +13,16 @@ type Player = {
   preferred_name: string | null;
   jersey_no: number | null;
   created_at: string | null;
+  photo_url: string | null;
+  photo_storage_path: string | null;
+};
+
+type PlayerWithPhotoUrl = Player & {
+  signedPhotoUrl?: string | null;
 };
 
 export default function PlayersPage() {
-  const [rows, setRows] = useState<Player[]>([]);
+  const [rows, setRows] = useState<PlayerWithPhotoUrl[]>([]);
   const [q, setQ] = useState('');
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState<string | null>(null);
@@ -29,10 +32,34 @@ export default function PlayersPage() {
     setMsg(null);
     const { data, error } = await supabase
       .from('players')
-      .select('id, first_name, last_name, preferred_name, jersey_no, created_at')
+      .select('id, first_name, last_name, preferred_name, jersey_no, created_at, photo_url, photo_storage_path')
       .order('created_at', { ascending: false });
-    if (error) setMsg(error.message);
-    setRows(data || []);
+
+    if (error) {
+      setMsg(error.message);
+      setLoading(false);
+      return;
+    }
+
+    // Load signed URLs for all players with photos
+    const playersWithPhotos: PlayerWithPhotoUrl[] = await Promise.all(
+      (data || []).map(async (player) => {
+        let signedPhotoUrl: string | null = null;
+
+        if (player.photo_storage_path) {
+          signedPhotoUrl = await getPlayerPhotoSignedUrl(player.photo_storage_path);
+        } else if (player.photo_url) {
+          signedPhotoUrl = player.photo_url;
+        }
+
+        return {
+          ...player,
+          signedPhotoUrl,
+        };
+      })
+    );
+
+    setRows(playersWithPhotos);
     setLoading(false);
   }
 
@@ -70,6 +97,7 @@ export default function PlayersPage() {
           <table className="w-full text-sm">
             <thead className="bg-neutral-100 border-b border-neutral-200">
               <tr>
+                <th className="text-left p-3">Photo</th>
                 <th className="text-left p-3">Name</th>
                 <th className="text-left p-3">Jersey</th>
                 <th className="text-left p-3">Actions</th>
@@ -80,6 +108,35 @@ export default function PlayersPage() {
                 const name = p.preferred_name || `${p.first_name} ${p.last_name}`;
                 return (
                   <tr key={p.id} className="border-b border-neutral-100 hover:bg-neutral-50">
+                    <td className="p-3">
+                      {p.signedPhotoUrl ? (
+                        <div className="relative w-12 h-12 rounded-md overflow-hidden border border-neutral-300 bg-neutral-100">
+                          <Image
+                            src={p.signedPhotoUrl}
+                            alt={`${name}'s photo`}
+                            fill
+                            className="object-cover"
+                            unoptimized
+                          />
+                        </div>
+                      ) : (
+                        <div className="w-12 h-12 rounded-md border border-neutral-300 bg-neutral-100 flex items-center justify-center">
+                          <svg
+                            className="w-6 h-6 text-neutral-400"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                            />
+                          </svg>
+                        </div>
+                      )}
+                    </td>
                     <td className="p-3">{name}</td>
                     <td className="p-3">{p.jersey_no ?? '—'}</td>
                     <td className="p-3">
@@ -94,7 +151,7 @@ export default function PlayersPage() {
                 );
               })}
               {filtered.length === 0 && (
-                <tr><td className="p-4 text-neutral-700" colSpan={3}>No players.</td></tr>
+                <tr><td className="p-4 text-neutral-700" colSpan={4}>No players.</td></tr>
               )}
             </tbody>
           </table>
