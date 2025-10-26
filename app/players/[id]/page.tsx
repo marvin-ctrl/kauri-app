@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { supabase } from '@/lib/supabase';
+import { getSupabase } from '@/lib/supabase';
 import { getPlayerPhotoSignedUrl } from '@/lib/storage';
 
 type Player = {
@@ -31,7 +31,7 @@ export default function PlayerProfilePage() {
       const isUuid = /^[0-9a-f-]{36}$/i.test(pid);
       if (!isUuid) { setMsg('Invalid player id in URL.'); return; }
 
-      const { data, error } = await supabase
+      const { data, error } = await getSupabase()
         .from('players')
         .select('id, first_name, last_name, preferred_name, jersey_no, dob, photo_url, photo_storage_path')
         .eq('id', pid)

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
+import { getSupabase } from '@/lib/supabase';
 import { uploadAndSavePlayerPhoto, getPlayerPhotoSignedUrl } from '@/lib/storage';
 import PhotoUpload from '@/app/components/PhotoUpload';
 
@@ -47,7 +47,7 @@ export default function EditPlayerPage() {
 
   useEffect(() => {
     (async () => {
-      const { data, error } = await supabase
+      const { data, error } = await getSupabase()
         .from('players')
         .select('*')
         .eq('id', id)
@@ -121,7 +121,7 @@ export default function EditPlayerPage() {
       updated_at: new Date().toISOString(),
     };
 
-    const { error } = await supabase.from('players').update(payload).eq('id', id);
+    const { error } = await getSupabase().from('players').update(payload).eq('id', id);
     setSaving(false);
     if (error) { setMsg(`Error: ${error.message}`); return; }
     router.replace(`/players/${id}`);
@@ -129,7 +129,7 @@ export default function EditPlayerPage() {
 
   async function del() {
     if (!confirm('Delete this player? This cannot be undone.')) return;
-    const { error } = await supabase.from('players').delete().eq('id', id);
+    const { error } = await getSupabase().from('players').delete().eq('id', id);
     if (error) { setMsg(`Error: ${error.message}`); return; }
     router.replace('/players');
   }

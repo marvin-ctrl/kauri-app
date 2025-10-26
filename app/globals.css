@@ -60,7 +60,7 @@ body {
   margin: 0;
   background: var(--background);
   color: var(--foreground);
-  font-family: 'Poppins', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
   line-height: 1.5;
 }
 
@@ -72,10 +72,10 @@ body {
 /* Text selection */
 ::selection { background: var(--kauri-seafoam); color: #FFFFFF; }
 
-/* Headings (Oswald) */
+/* Headings */
 h1,h2,h3,h4,h5,h6 {
   color: var(--foreground);
-  font-family: 'Oswald', sans-serif;
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   font-weight: 700;
   letter-spacing: -0.01em;
 }
@@ -162,7 +162,7 @@ textarea:focus {
 
 /* Utilities */
 .container { max-width: 64rem; margin-inline: auto; padding: 1.5rem; }
-.font-brand { font-family: 'Oswald', sans-serif; }
+.font-brand { font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; font-weight: 700; }
 .bg-midnight { background-color: var(--kauri-midnight); }
 .bg-taffy    { background-color: var(--kauri-taffy); }
 .bg-seafoam  { background-color: var(--kauri-seafoam); }

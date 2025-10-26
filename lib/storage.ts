@@ -3,7 +3,7 @@
  * Handles file uploads, downloads, and signed URL generation
  */
 
-import { supabase } from './supabase';
+import { getSupabase } from './supabase';
 
 const PLAYER_PHOTOS_BUCKET = 'player-photos';
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -75,7 +75,7 @@ export async function uploadPlayerPhoto(
     const storagePath = generatePlayerPhotoPath(playerId, file.name);
 
     // Upload to Supabase Storage
-    const { data, error } = await supabase.storage
+    const { data, error } = await getSupabase().storage
       .from(PLAYER_PHOTOS_BUCKET)
       .upload(storagePath, file, {
         cacheControl: '3600',
@@ -112,7 +112,7 @@ export async function uploadPlayerPhoto(
  */
 export async function deletePlayerPhoto(storagePath: string): Promise<boolean> {
   try {
-    const { error } = await supabase.storage
+    const { error } = await getSupabase().storage
       .from(PLAYER_PHOTOS_BUCKET)
       .remove([storagePath]);
 
@@ -140,7 +140,7 @@ export async function getPlayerPhotoSignedUrl(
       return null;
     }
 
-    const { data, error } = await supabase.storage
+    const { data, error } = await getSupabase().storage
       .from(PLAYER_PHOTOS_BUCKET)
       .createSignedUrl(storagePath, SIGNED_URL_EXPIRY);
 
@@ -161,7 +161,7 @@ export async function getPlayerPhotoSignedUrl(
  * Note: Currently using signed URLs since bucket is private
  */
 export function getPlayerPhotoPublicUrl(storagePath: string): string {
-  const { data } = supabase.storage
+  const { data } = getSupabase().storage
     .from(PLAYER_PHOTOS_BUCKET)
     .getPublicUrl(storagePath);
 
