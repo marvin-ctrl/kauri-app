@@ -1,9 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
+import Link from 'next/link';
+import { useSupabase } from '@/lib/supabase';
+import { useAuthGuard } from '@/lib/auth-guard';
 import { uploadAndSavePlayerPhoto, getPlayerPhotoSignedUrl } from '@/lib/storage';
+import { formatError } from '@/lib/validation';
 import PhotoUpload from '@/app/components/PhotoUpload';
 
 type Player = {
@@ -21,6 +24,8 @@ type Player = {
 };
 
 export default function EditPlayerPage() {
+  const { isLoading: authLoading, isAuthenticated } = useAuthGuard();
+  const supabase = useSupabase();
   const router = useRouter();
   const { id } = useParams<{ id: string }>();
 
@@ -45,16 +50,17 @@ export default function EditPlayerPage() {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [currentPhotoUrl, setCurrentPhotoUrl] = useState<string | null>(null);
 
-  useEffect(() => {
-    (async () => {
+  const loadData = useCallback(async () => {
+    try {
       const { data, error } = await supabase
         .from('players')
         .select('*')
         .eq('id', id)
         .maybeSingle();
 
-      if (error || !data) {
-        setMsg(error ? `Error: ${error.message}` : 'Player not found.');
+      if (error) throw error;
+      if (!data) {
+        setMsg('Player not found.');
         setLoading(false);
         return;
       }
@@ -80,8 +86,17 @@ export default function EditPlayerPage() {
       }
 
       setLoading(false);
-    })();
-  }, [id]);
+    } catch (err: unknown) {
+      setMsg(`Error: ${formatError(err)}`);
+      setLoading(false);
+    }
+  }, [id, supabase]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      loadData();
+    }
+  }, [isAuthenticated, loadData]);
 
   async function save(e: React.FormEvent) {
     e.preventDefault();

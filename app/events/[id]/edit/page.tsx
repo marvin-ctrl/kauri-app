@@ -1,13 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+import { useSupabase } from '@/lib/supabase';
+import { useAuthGuard } from '@/lib/auth-guard';
+import { isValidUUID } from '@/lib/validation';
 
 type Team = { id: string; name: string };
 
@@ -16,9 +13,11 @@ function toDateInput(d: Date) { return `${d.getFullYear()}-${pad(d.getMonth()+1)
 function toTimeInput(d: Date) { return `${pad(d.getHours())}:${pad(d.getMinutes())}`; }
 
 export default function EditEventPage() {
+  const { isLoading: authLoading, isAuthenticated } = useAuthGuard();
   const router = useRouter();
   const params = useParams<{ id: string }>();
   const id = params?.id as string;
+  const supabase = useSupabase();
 
   const [teams, setTeams] = useState<Team[]>([]);
   const [teamId, setTeamId] = useState('');
@@ -30,30 +29,37 @@ export default function EditEventPage() {
   const [msg, setMsg] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { router.replace('/login'); return; }
-
-      const [teamsRes, eventRes] = await Promise.all([
-        supabase.from('teams').select('id,name').order('name'),
-        supabase.from('events').select('*').eq('id', id).maybeSingle(),
-      ]);
-      setTeams(teamsRes.data ?? []);
-
-      const ev = eventRes.data;
-      if (!ev) { setMsg('Event not found.'); setLoading(false); return; }
-
-      setTeamId(ev.team_id ?? '');
-      setType(ev.type);
-      setTitle(ev.title ?? '');
-      setLocation(ev.location ?? '');
-      const s = new Date(ev.starts_at); const e = new Date(ev.ends_at);
-      setStartDate(toDateInput(s)); setStartTime(toTimeInput(s));
-      setEndDate(toDateInput(e));   setEndTime(toTimeInput(e));
+  const loadData = useCallback(async () => {
+    if (!isValidUUID(id)) {
+      setMsg('Invalid event ID');
       setLoading(false);
-    })();
-  }, [id, router]);
+      return;
+    }
+
+    const [teamsRes, eventRes] = await Promise.all([
+      supabase.from('teams').select('id,name').order('name'),
+      supabase.from('events').select('*').eq('id', id).maybeSingle(),
+    ]);
+    setTeams(teamsRes.data ?? []);
+
+    const ev = eventRes.data;
+    if (!ev) { setMsg('Event not found.'); setLoading(false); return; }
+
+    setTeamId(ev.team_id ?? '');
+    setType(ev.type);
+    setTitle(ev.title ?? '');
+    setLocation(ev.location ?? '');
+    const s = new Date(ev.starts_at); const e = new Date(ev.ends_at);
+    setStartDate(toDateInput(s)); setStartTime(toTimeInput(s));
+    setEndDate(toDateInput(e));   setEndTime(toTimeInput(e));
+    setLoading(false);
+  }, [id, supabase]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      loadData();
+    }
+  }, [isAuthenticated, loadData]);
 
   async function save(e: React.FormEvent) {
     e.preventDefault(); setMsg(null);
@@ -74,7 +80,18 @@ export default function EditEventPage() {
     router.replace('/dashboard');
   }
 
-  if (loading) return <main className="min-h-screen grid place-items-center">Loading…</main>;
+  if (authLoading || loading) {
+    return (
+      <main className="min-h-screen p-6">
+        <div className="max-w-2xl mx-auto space-y-4">
+          <div className="h-12 bg-neutral-200 rounded animate-pulse" />
+          <div className="h-64 bg-neutral-200 rounded animate-pulse" />
+        </div>
+      </main>
+    );
+  }
+
+  if (!isAuthenticated) return null;
 
   return (
     <main className="min-h-screen bg-neutral-50 text-neutral-900 p-6">
@@ -85,7 +102,12 @@ export default function EditEventPage() {
           <label className="block text-sm font-medium">
             Team
             <select value={teamId} onChange={(e)=>setTeamId(e.target.value)}
-              className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white"/>
+              className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white">
+              <option value="">No specific team</option>
+              {teams.map(t => (
+                <option key={t.id} value={t.id}>{t.name}</option>
+              ))}
+            </select>
           </label>
 
           <label className="block text-sm font-medium">

@@ -2,13 +2,14 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+import Link from 'next/link';
+import { useSupabase } from '@/lib/supabase';
+import { useAuthGuard } from '@/lib/auth-guard';
+import { formatError } from '@/lib/validation';
 
 export default function NewPlayerPage() {
+  const { isLoading: authLoading, isAuthenticated } = useAuthGuard();
+  const supabase = useSupabase();
   const router = useRouter();
   const [firstName, setFirst] = useState(''); const [lastName, setLast] = useState('');
   const [preferred, setPreferred] = useState(''); const [dob, setDob] = useState('');
@@ -18,31 +19,49 @@ export default function NewPlayerPage() {
 
   async function save(e: React.FormEvent) {
     e.preventDefault(); setMsg(null); setSaving(true);
-    const { data: pData, error: pErr } = await supabase
-      .from('players')
-      .insert({
-        first_name: firstName.trim(), last_name: lastName.trim(),
-        preferred_name: preferred.trim() || null,
-        dob: dob || null, jersey_no: jersey === '' ? null : Number(jersey),
-        status
-      })
-      .select('id')
-      .single();
-    if (pErr || !pData) { setMsg(`Error: ${pErr?.message}`); setSaving(false); return; }
+    try {
+      const { data: pData, error: pErr } = await supabase
+        .from('players')
+        .insert({
+          first_name: firstName.trim(), last_name: lastName.trim(),
+          preferred_name: preferred.trim() || null,
+          dob: dob || null, jersey_no: jersey === '' ? null : Number(jersey),
+          status
+        })
+        .select('id')
+        .single();
+      if (pErr || !pData) throw pErr || new Error('Failed to create player');
 
-    if (guardianName.trim() || guardianEmail.trim() || guardianPhone.trim()) {
-      const { data: g } = await supabase.from('guardians')
-        .insert({ name: guardianName.trim(), email: guardianEmail.trim() || null, phone: guardianPhone.trim() || null })
-        .select('id').single();
-      if (g) {
-        await supabase.from('guardian_players')
-          .insert({ player_id: pData.id, guardian_id: g.id, primary_contact: true });
+      if (guardianName.trim() || guardianEmail.trim() || guardianPhone.trim()) {
+        const { data: g } = await supabase.from('guardians')
+          .insert({ name: guardianName.trim(), email: guardianEmail.trim() || null, phone: guardianPhone.trim() || null })
+          .select('id').single();
+        if (g) {
+          await supabase.from('guardian_players')
+            .insert({ player_id: pData.id, guardian_id: g.id, primary_contact: true });
+        }
       }
-    }
 
-    setSaving(false);
-    router.replace(`/players/${pData.id}`);
+      setSaving(false);
+      router.replace(`/players/${pData.id}`);
+    } catch (err: unknown) {
+      setSaving(false);
+      setMsg(`Error: ${formatError(err)}`);
+    }
   }
+
+  if (authLoading) {
+    return (
+      <main className="min-h-screen p-6">
+        <div className="max-w-2xl mx-auto space-y-4">
+          <div className="h-12 bg-neutral-200 rounded animate-pulse" />
+          <div className="h-64 bg-neutral-200 rounded animate-pulse" />
+        </div>
+      </main>
+    );
+  }
+
+  if (!isAuthenticated) return null;
 
   return (
     <main className="min-h-screen bg-neutral-50 text-neutral-900 p-6">

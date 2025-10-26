@@ -2,33 +2,41 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+import { useSupabase } from '@/lib/supabase';
+import { AUTH, ROUTES } from '@/lib/constants';
 
 export default function PostAuth() {
   const router = useRouter();
+  const supabase = useSupabase();
 
   useEffect(() => {
     let cancelled = false;
+    const timeouts: NodeJS.Timeout[] = [];
 
     (async () => {
-      for (let i = 0; i < 10; i++) {
+      for (let i = 0; i < AUTH.SESSION_POLL_MAX_ATTEMPTS; i++) {
+        if (cancelled) break;
+
         const { data: { session } } = await supabase.auth.getSession();
         if (session) break;
-        await new Promise(r => setTimeout(r, 250));
+
+        await new Promise(r => {
+          const timeout = setTimeout(r, AUTH.SESSION_POLL_INTERVAL_MS);
+          timeouts.push(timeout);
+        });
       }
+
       if (cancelled) return;
 
       const { data: { user } } = await supabase.auth.getUser();
-      router.replace(user ? '/dashboard' : '/login');
+      router.replace(user ? ROUTES.DASHBOARD : ROUTES.LOGIN);
     })();
 
-    return () => { cancelled = true; };
-  }, [router]);
+    return () => {
+      cancelled = true;
+      timeouts.forEach(clearTimeout);
+    };
+  }, [router, supabase]);
 
   return (
     <main className="min-h-screen grid place-items-center bg-neutral-50 text-neutral-900">

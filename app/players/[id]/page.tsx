@@ -1,11 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { supabase } from '@/lib/supabase';
+import { useSupabase } from '@/lib/supabase';
+import { useAuthGuard } from '@/lib/auth-guard';
 import { getPlayerPhotoSignedUrl } from '@/lib/storage';
+import { isValidUUID, formatError } from '@/lib/validation';
 
 type Player = {
   id: string;
@@ -19,24 +21,29 @@ type Player = {
 };
 
 export default function PlayerProfilePage() {
+  const { isLoading: authLoading, isAuthenticated } = useAuthGuard();
+  const supabase = useSupabase();
   const { id } = useParams<{ id: string }>();
   const [p, setP] = useState<Player | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    (async () => {
-      // simple guard for bad URLs
+  const loadData = useCallback(async () => {
+    try {
       const pid = String(id);
-      const isUuid = /^[0-9a-f-]{36}$/i.test(pid);
-      if (!isUuid) { setMsg('Invalid player id in URL.'); return; }
+      if (!isValidUUID(pid)) {
+        setMsg('Invalid player id in URL.');
+        setLoading(false);
+        return;
+      }
 
       const { data, error } = await supabase
         .from('players')
         .select('id, first_name, last_name, preferred_name, jersey_no, dob, photo_url, photo_storage_path')
         .eq('id', pid)
         .maybeSingle();
-      if (error) setMsg(error.message);
+      if (error) throw error;
 
       if (data) {
         setP(data as Player);
@@ -50,11 +57,33 @@ export default function PlayerProfilePage() {
           setPhotoUrl(data.photo_url);
         }
       }
-    })();
-  }, [id]);
+      setLoading(false);
+    } catch (err: unknown) {
+      setMsg(formatError(err));
+      setLoading(false);
+    }
+  }, [id, supabase]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      loadData();
+    }
+  }, [isAuthenticated, loadData]);
+
+  if (authLoading || loading) {
+    return (
+      <main className="min-h-screen p-6">
+        <div className="max-w-3xl mx-auto space-y-4">
+          <div className="h-12 bg-neutral-200 rounded animate-pulse" />
+          <div className="h-64 bg-neutral-200 rounded animate-pulse" />
+        </div>
+      </main>
+    );
+  }
+
+  if (!isAuthenticated) return null;
 
   if (msg && !p) return <main className="min-h-screen grid place-items-center">{msg}</main>;
-  if (!p) return <main className="min-h-screen grid place-items-center">Loading…</main>;
 
   const name = p.preferred_name || `${p.first_name} ${p.last_name}`;
 

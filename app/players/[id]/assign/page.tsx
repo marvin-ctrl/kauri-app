@@ -1,19 +1,20 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+import Link from 'next/link';
+import { useSupabase } from '@/lib/supabase';
+import { useAuthGuard } from '@/lib/auth-guard';
+import { LOCAL_STORAGE_KEYS } from '@/lib/constants';
+import { isValidUUID } from '@/lib/validation';
 
 type Team = { id: string; name: string };
 
 export default function AssignPlayerToTeamsPage() {
+  const { isLoading: authLoading, isAuthenticated } = useAuthGuard();
   const router = useRouter();
   const { id: playerId } = useParams<{ id: string }>();
+  const supabase = useSupabase();
 
   const [teams, setTeams] = useState<Team[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -22,12 +23,20 @@ export default function AssignPlayerToTeamsPage() {
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
+  const loadTeams = useCallback(async () => {
+    if (!isValidUUID(String(playerId))) {
+      setMsg('Invalid player ID');
+      return;
+    }
+    const { data } = await supabase.from('teams').select('id,name').order('name');
+    setTeams(data || []);
+  }, [playerId, supabase]);
+
   useEffect(() => {
-    (async () => {
-      const { data } = await supabase.from('teams').select('id,name').order('name');
-      setTeams(data || []);
-    })();
-  }, []);
+    if (isAuthenticated) {
+      loadTeams();
+    }
+  }, [isAuthenticated, loadTeams]);
 
   function toggle(teamId: string) {
     const next = new Set(selected);
@@ -43,8 +52,15 @@ export default function AssignPlayerToTeamsPage() {
 
     setSaving(true);
     try {
-      const termId = typeof window !== 'undefined' ? localStorage.getItem('kauri.termId') : null;
-      if (!termId) { setMsg('Select a term in the header.'); setSaving(false); return; }
+      const termId = typeof window !== 'undefined'
+        ? localStorage.getItem(LOCAL_STORAGE_KEYS.TERM_ID)
+        : null;
+
+      if (!termId) {
+        setMsg('Select a term in the header.');
+        setSaving(false);
+        return;
+      }
 
       // 1) ensure player_terms row
       const pt = await supabase
@@ -65,28 +81,34 @@ export default function AssignPlayerToTeamsPage() {
         playerTermId = ins.data.id;
       }
 
-      // 2) ensure team_terms rows for each selected team
+      // 2) FIXED: Batch query team_terms to avoid N+1 problem
       const teamIds = Array.from(selected);
-      const teamTermIds: string[] = [];
-      for (const team_id of teamIds) {
-        const tt = await supabase
+
+      // Single query to get all existing team_terms
+      const { data: existingTTs } = await supabase
+        .from('team_terms')
+        .select('id, team_id')
+        .in('team_id', teamIds)
+        .eq('term_id', termId);
+
+      const teamTermMap = new Map(existingTTs?.map(tt => [tt.team_id, tt.id]) || []);
+
+      // Batch insert missing team_terms
+      const missingTeamIds = teamIds.filter(tid => !teamTermMap.has(tid));
+      if (missingTeamIds.length > 0) {
+        const { data: newTTs, error: insertError } = await supabase
           .from('team_terms')
-          .select('id')
-          .eq('team_id', team_id)
-          .eq('term_id', termId)
-          .maybeSingle();
-        if (tt.data?.id) {
-          teamTermIds.push(tt.data.id);
-        } else {
-          const ins = await supabase
-            .from('team_terms')
-            .insert({ team_id, term_id: termId })
-            .select('id')
-            .single();
-          if (ins.error || !ins.data) throw ins.error || new Error('Failed to create team_terms');
-          teamTermIds.push(ins.data.id);
+          .insert(missingTeamIds.map(tid => ({ team_id: tid, term_id: termId })))
+          .select('id, team_id');
+
+        if (insertError) {
+          throw new Error(insertError.message || 'Failed to create team_terms');
         }
+
+        newTTs?.forEach(tt => teamTermMap.set(tt.team_id, tt.id));
       }
+
+      const teamTermIds = Array.from(teamTermMap.values());
 
       // 3) insert memberships if missing
       const existing = await supabase
@@ -118,23 +140,37 @@ export default function AssignPlayerToTeamsPage() {
 
       setSaving(false);
       router.replace(`/players/${playerId}`);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setSaving(false);
-      setMsg(`Error: ${err?.message || 'Failed to assign'}`);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to assign';
+      setMsg(`Error: ${errorMessage}`);
     }
   }
+
+  if (authLoading) {
+    return (
+      <main className="min-h-screen p-6">
+        <div className="max-w-2xl mx-auto space-y-4">
+          <div className="h-12 bg-neutral-200 rounded animate-pulse" />
+          <div className="h-64 bg-neutral-200 rounded animate-pulse" />
+        </div>
+      </main>
+    );
+  }
+
+  if (!isAuthenticated) return null;
 
   return (
     <main className="min-h-screen bg-neutral-50 text-neutral-900 p-6">
       <div className="max-w-2xl mx-auto bg-white border border-neutral-200 rounded-xl shadow-sm p-6 space-y-6">
         <header className="flex items-center justify-between">
           <h1 className="text-3xl font-extrabold tracking-tight">Assign to teams</h1>
-          <a
+          <Link
             href={`/players/${playerId}`}
             className="px-3 py-2 rounded-md bg-neutral-200 hover:bg-neutral-300 text-neutral-900 font-semibold"
           >
             Cancel
-          </a>
+          </Link>
         </header>
 
         <form onSubmit={onSubmit} className="space-y-5">

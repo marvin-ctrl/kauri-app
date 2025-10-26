@@ -1,13 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+import { useSupabase } from '@/lib/supabase';
+import { useAuthGuard } from '@/lib/auth-guard';
 
 type Player = {
   id: string;
@@ -19,12 +15,14 @@ type Player = {
 };
 
 export default function PlayersPage() {
+  const { isLoading: authLoading, isAuthenticated } = useAuthGuard();
   const [rows, setRows] = useState<Player[]>([]);
   const [q, setQ] = useState('');
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState<string | null>(null);
+  const supabase = useSupabase();
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true);
     setMsg(null);
     const { data, error } = await supabase
@@ -34,9 +32,13 @@ export default function PlayersPage() {
     if (error) setMsg(error.message);
     setRows(data || []);
     setLoading(false);
-  }
+  }, [supabase]);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    if (isAuthenticated) {
+      load();
+    }
+  }, [isAuthenticated, load]);
 
   const filtered = rows.filter(p => {
     const term = q.trim().toLowerCase();
@@ -45,7 +47,18 @@ export default function PlayersPage() {
     return name.includes(term) || String(p.jersey_no ?? '').includes(term);
   });
 
-  if (loading) return <main className="min-h-screen grid place-items-center">Loading…</main>;
+  if (authLoading || loading) {
+    return (
+      <main className="min-h-screen p-6">
+        <div className="max-w-5xl mx-auto space-y-4">
+          <div className="h-12 bg-neutral-200 rounded animate-pulse" />
+          <div className="h-64 bg-neutral-200 rounded animate-pulse" />
+        </div>
+      </main>
+    );
+  }
+
+  if (!isAuthenticated) return null;
 
   return (
     <main className="min-h-screen p-6">
