@@ -1,176 +1,26 @@
-/* If you're on Tailwind v4 keep this line. If v3, replace with:
-   @tailwind base; @tailwind components; @tailwind utilities; */
 @import "tailwindcss";
 
-/* ---- Kauri Futsal Brand Colors ---- */
 :root {
-  /* Brand */
-  --kauri-midnight: #172F56;   /* Primary Navy */
-  --kauri-taffy: #F289AE;      /* Pink */
-  --kauri-seafoam: #79CBC4;    /* Teal */
-  --kauri-white: #FFFFFF;
-
-  /* Light mode defaults: dark text on light bg */
-  --background: #FFFFFF;
-  --foreground: #0f172a;       /* readable body text */
-  --muted: #5a718f;
-  --border: #e2e8f0;
-  --ring: #79CBC4;
-  --link: #172F56;
-  --link-hover: #79CBC4;
-  --success-bg: #d1f5f2;
-  --success-fg: #0d7a6e;
-  --error-bg: #ffd7e4;
-  --error-fg: #c41d5e;
-  --card: #FFFFFF;
-  --input-bg: #FFFFFF;
-  --accent: #F289AE;
-  --accent-hover: #e5679a;
+  --background: #ffffff;
+  --foreground: #171717;
 }
 
-/* Dark mode */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0d1a2d;
-    --foreground: #e6e8ee;     /* readable on dark bg */
-    --muted: #79CBC4;
-    --border: #2a4263;
-    --ring: #79CBC4;
-    --link: #79CBC4;
-    --link-hover: #F289AE;
-    --success-bg: #1a4d47;
-    --success-fg: #79CBC4;
-    --error-bg: #5a1f38;
-    --error-fg: #F289AE;
-    --card: #172F56;
-    --input-bg: #1e3a5f;
-    --accent: #F289AE;
-    --accent-hover: #ff9ec0;
+    --background: #0a0a0a;
+    --foreground: #ededed;
   }
 }
 
-/* ---- Base ---- */
-*,
-*::before,
-*::after { box-sizing: border-box; }
-
-html { -webkit-text-size-adjust: 100%; }
-
 body {
-  margin: 0;
   background: var(--background);
   color: var(--foreground);
-  font-family: 'Poppins', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
-  line-height: 1.5;
-}
-
-/* Ensure readable text on specific light card backgrounds */
-.card {
-  color: var(--foreground);
-}
-
-/* Text selection */
-::selection { background: var(--kauri-seafoam); color: #FFFFFF; }
-
-/* Headings (Oswald) */
-h1,h2,h3,h4,h5,h6 {
-  color: var(--foreground);
-  font-family: 'Oswald', sans-serif;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-}
-h1 { font-size: clamp(1.75rem, 2vw + 1rem, 2rem); line-height: 1.2; }
-h2 { font-size: 1.25rem; line-height: 1.3; }
-
-/* Links */
-a {
-  color: var(--link);
-  text-decoration: underline;
-  text-underline-offset: 2px;
-  transition: color 0.2s ease;
-}
-a:hover { color: var(--link-hover); }
-
-/* Containers */
-main { background: var(--background); }
-
-/* Cards */
-.card {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 0.75rem;
-  box-shadow: 0 1px 2px rgb(0 0 0 / 0.05);
-}
-
-/* Buttons */
-button,
-.btn {
-  appearance: none;
-  border: 0;
-  border-radius: 0.5rem;
-  padding: 0.5rem 0.75rem;
-  font-weight: 600;
-  background: var(--kauri-midnight);
-  color: #fff;                 /* always readable on primary */
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-button:hover,
-.btn:hover { background: #1e3a5f; transform: translateY(-1px); }
-button:disabled,
-.btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
-
-.btn-primary { background: var(--kauri-midnight); color: #fff; }
-.btn-primary:hover { background: #1e3a5f; }
-
-/* Accent and secondary keep dark text only if bg is light */
-.btn-accent { background: var(--kauri-taffy); color: var(--kauri-midnight); }
-.btn-accent:hover { background: var(--accent-hover); }
-
-.btn-secondary { background: var(--kauri-seafoam); color: var(--kauri-midnight); }
-.btn-secondary:hover { background: #68b8b0; }
-
-/* Inputs */
-input,
-select,
-textarea {
-  width: 100%;
-  background: var(--input-bg);
-  color: var(--foreground);
-  border: 1px solid var(--border);
-  border-radius: 0.5rem;
-  padding: 0.5rem 0.75rem;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-input::placeholder,
-textarea::placeholder { color: var(--muted); }
-input:focus,
-select:focus,
-textarea:focus {
-  outline: none;
-  border-color: var(--kauri-seafoam);
-  box-shadow: 0 0 0 3px rgba(121, 203, 196, 0.1);
-}
-
-/* Focus ring */
-:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
-
-/* Messages */
-.alert { border-radius: 0.5rem; padding: 0.75rem 1rem; font-weight: 600; }
-.alert-success { background: var(--success-bg); color: var(--success-fg); border: 1px solid var(--kauri-seafoam); }
-.alert-error   { background: var(--error-bg);   color: var(--error-fg);   border: 1px solid var(--kauri-taffy); }
-
-/* Utilities */
-.container { max-width: 64rem; margin-inline: auto; padding: 1.5rem; }
-.font-brand { font-family: 'Oswald', sans-serif; }
-.bg-midnight { background-color: var(--kauri-midnight); }
-.bg-taffy    { background-color: var(--kauri-taffy); }
-.bg-seafoam  { background-color: var(--kauri-seafoam); }
-.text-midnight { color: var(--kauri-midnight); }
-.text-taffy    { color: var(--kauri-taffy); }
-.text-seafoam  { color: var(--kauri-seafoam); }
-
-/* Reduce motion */
-@media (prefers-reduced-motion: reduce) {
-  * { animation: none !important; transition: none !important; }
+  font-family: Arial, Helvetica, sans-serif;
 }
