@@ -1,172 +1,130 @@
-diff --git a/app/events/page.tsx b/app/events/page.tsx
-index a5bb6c96f52425c31c1e87fc47685b51f06ec5c6..00ea1dfe7ef3707023a8ca72db152894dc053e17 100644
---- a/app/events/page.tsx
-+++ b/app/events/page.tsx
-@@ -1,90 +1,126 @@
- 'use client';
- 
- import { useEffect, useState } from 'react';
- import Link from 'next/link';
- import { createClient } from '@supabase/supabase-js';
-+import LoadingState from '@/app/components/LoadingState';
-+import EmptyState from '@/app/components/EmptyState';
-+import {
-+  brandCard,
-+  brandContainer,
-+  brandHeading,
-+  brandPage,
-+  brandTableCard,
-+  cx,
-+  primaryActionButton,
-+  subtleText
-+} from '@/lib/theme';
- 
- const supabase = createClient(
-   process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
- );
- 
- type EventRow = {
-   id: string;
-   title: string | null;
-   type: string;
-   location: string | null;
-   starts_at: string;
- };
- 
- export default function EventsPage() {
-   const [rows, setRows] = useState<EventRow[]>([]);
-   const [loading, setLoading] = useState(true);
-   const [msg, setMsg] = useState<string | null>(null);
- 
-   useEffect(() => {
-     (async () => {
-       setLoading(true);
-       setMsg(null);
-       const { data, error } = await supabase
-         .from('events')
-         .select('id, title, type, location, starts_at')
-         .order('starts_at', { ascending: true });
-       if (error) setMsg(error.message);
-       setRows(data || []);
-       setLoading(false);
-     })();
-   }, []);
- 
--  if (loading) return <main className="min-h-screen grid place-items-center">Loading…</main>;
-+  if (loading) {
-+    return (
-+      <main className={brandPage}>
-+        <LoadingState message="Loading events…" />
-+      </main>
-+    );
-+  }
- 
-   return (
--    <main className="min-h-screen p-6">
--      <div className="max-w-4xl mx-auto space-y-4">
--        <header className="flex items-center justify-between">
--          <h1 className="text-3xl font-extrabold tracking-tight">Events</h1>
--          <Link href="/events/new" className="px-3 py-2 rounded-md bg-blue-700 hover:bg-blue-800 text-white font-semibold">
-+    <main className={brandPage}>
-+      <div className={brandContainer}>
-+        <header className={cx(brandCard, 'flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between')}>
-+          <div className="space-y-1">
-+            <h1 className={cx(brandHeading, 'text-3xl sm:text-4xl')}>Events</h1>
-+            <p className={cx('text-sm', subtleText)}>Manage match days, trainings, and key club happenings.</p>
-+          </div>
-+          <Link href="/events/new" className={primaryActionButton}>
-             New event
-           </Link>
-         </header>
- 
--        <section className="bg-white border border-neutral-200 rounded-xl shadow-sm overflow-hidden">
--          <table className="w-full text-sm">
--            <thead className="bg-neutral-100 border-b border-neutral-200">
--              <tr>
--                <th className="text-left p-3">When</th>
--                <th className="text-left p-3">Type</th>
--                <th className="text-left p-3">Title</th>
--                <th className="text-left p-3">Location</th>
--                <th className="text-left p-3">Actions</th>
--              </tr>
--            </thead>
--            <tbody>
--              {rows.map(ev => (
--                <tr key={ev.id} className="border-b border-neutral-100">
--                  <td className="p-3">
--                    {new Date(ev.starts_at).toLocaleString('en-NZ', {
--                      weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
--                    })}
--                  </td>
--                  <td className="p-3">{ev.type}</td>
--                  <td className="p-3">{ev.title ?? '—'}</td>
--                  <td className="p-3">{ev.location ?? '—'}</td>
--                  <td className="p-3">
--                    <Link href={`/events/${ev.id}/roll`} className="underline text-blue-700 hover:text-blue-800">
--                      Take roll
--                    </Link>
--                  </td>
-+        {rows.length > 0 ? (
-+          <section className={cx(brandTableCard, 'overflow-hidden')}>
-+            <table className="w-full text-sm">
-+              <thead className="border-b border-white/40 bg-white/40 text-[#0f1f3b]">
-+                <tr>
-+                  <th className="text-left px-4 py-3">When</th>
-+                  <th className="text-left px-4 py-3">Type</th>
-+                  <th className="text-left px-4 py-3">Title</th>
-+                  <th className="text-left px-4 py-3">Location</th>
-+                  <th className="text-left px-4 py-3">Actions</th>
-                 </tr>
--              ))}
--              {rows.length === 0 && (
--                <tr><td className="p-4 text-neutral-700" colSpan={5}>No events.</td></tr>
--              )}
--            </tbody>
--          </table>
--        </section>
-+              </thead>
-+              <tbody>
-+                {rows.map(ev => (
-+                  <tr key={ev.id} className="border-b border-white/20 bg-white/60 text-[#0f1f3b] last:border-0">
-+                    <td className="px-4 py-3">
-+                      {new Date(ev.starts_at).toLocaleString('en-NZ', {
-+                        weekday: 'short',
-+                        month: 'short',
-+                        day: 'numeric',
-+                        hour: '2-digit',
-+                        minute: '2-digit'
-+                      })}
-+                    </td>
-+                    <td className="px-4 py-3 font-semibold uppercase tracking-wide text-[#172F56]">{ev.type}</td>
-+                    <td className="px-4 py-3">{ev.title ?? '—'}</td>
-+                    <td className="px-4 py-3">{ev.location ?? '—'}</td>
-+                    <td className="px-4 py-3">
-+                      <Link
-+                        href={`/events/${ev.id}/roll`}
-+                        className="font-semibold text-[#172F56] underline decoration-2 underline-offset-4 hover:text-[#0b1730]"
-+                      >
-+                        Take roll
-+                      </Link>
-+                    </td>
-+                  </tr>
-+                ))}
-+              </tbody>
-+            </table>
-+          </section>
-+        ) : (
-+          <EmptyState
-+            icon="📅"
-+            title="No events scheduled"
-+            description="Keep the club informed by adding trainings, fixtures, or whānau events."
-+            action={<Link href="/events/new" className={primaryActionButton}>Schedule an event</Link>}
-+          />
-+        )}
- 
--        {msg && <p className="text-sm text-red-800">{msg}</p>}
-+        {msg && (
-+          <div className={cx(brandCard, 'border border-[#F289AE]/40 bg-[#F289AE]/20 p-4 text-sm text-[#742348]')}>{msg}</div>
-+        )}
-       </div>
-     </main>
-   );
- }
+// app/dashboard/page.tsx
+'use client';
+
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { supabase } from '@/lib/supabase';
+import LoadingState from '@/app/components/LoadingState';
+import { brandCard, brandContainer, brandHeading, brandPage, cx, subtleText } from '@/lib/theme';
+
+type Counts = {
+  teams: number;
+  players: number;
+  events: number;
+  terms: number;
+};
+
+export default function DashboardPage() {
+  const [loading, setLoading] = useState(true);
+  const [msg, setMsg] = useState<string | null>(null);
+  const [counts, setCounts] = useState<Counts>({ teams: 0, players: 0, events: 0, terms: 0 });
+
+  useEffect(() => {
+    async function load() {
+      setLoading(true);
+      setMsg(null);
+
+      const [teams, players, events, terms] = await Promise.all([
+        supabase.from('teams').select('*', { count: 'exact', head: true }),
+        supabase.from('players').select('*', { count: 'exact', head: true }),
+        supabase.from('events').select('*', { count: 'exact', head: true }),
+        supabase.from('terms').select('*', { count: 'exact', head: true }),
+      ]);
+
+      const err = teams.error || players.error || events.error || terms.error;
+      if (err) {
+        setMsg(err.message);
+        setCounts({ teams: 0, players: 0, events: 0, terms: 0 });
+      } else {
+        setCounts({
+          teams: teams.count ?? 0,
+          players: players.count ?? 0,
+          events: events.count ?? 0,
+          terms: terms.count ?? 0,
+        });
+      }
+      setLoading(false);
+    }
+    load();
+  }, []);
+
+  if (loading) {
+    return (
+      <main className={brandPage}>
+        <div className={brandContainer}>
+          <LoadingState message="Loading dashboard…" />
+        </div>
+      </main>
+    );
+  }
+
+  return (
+    <main className={brandPage}>
+      <div className={brandContainer}>
+        <header className={cx(brandCard, 'p-6')}>
+          <h1 className={cx(brandHeading, 'text-3xl')}>Dashboard</h1>
+          <p className={cx('mt-1 text-sm', subtleText)}>Quick overview and shortcuts.</p>
+        </header>
+
+        {msg && (
+          <div className={cx(brandCard, 'p-4 text-sm text-[#742348] border border-[#F289AE]/40 bg-[#F289AE]/20')}>
+            {msg}
+          </div>
+        )}
+
+        <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <StatCard label="Teams" value={counts.teams} href="/teams" />
+          <StatCard label="Players" value={counts.players} href="/players" />
+          <StatCard label="Events" value={counts.events} href="/events" />
+          <StatCard label="Terms" value={counts.terms} href="/terms" />
+        </section>
+
+        <section className="grid gap-4 sm:grid-cols-2">
+          <QuickLink
+            title="Manage fees"
+            description="Set team fees for the active term."
+            href="/teams"
+            cta="Go to Teams"
+          />
+          <QuickLink
+            title="Create event"
+            description="Add trainings, games, or meetings."
+            href="/events/new"
+            cta="New event"
+          />
+        </section>
+      </div>
+    </main>
+  );
+}
+
+function StatCard({ label, value, href }: { label: string; value: number; href: string }) {
+  return (
+    <Link href={href} className={cx(brandCard, 'p-5 hover:opacity-95 transition')}>
+      <div className={cx(subtleText, 'text-xs uppercase tracking-wide')}>{label}</div>
+      <div className="mt-1 text-3xl font-extrabold text-[#0f1f3b]">{value}</div>
+    </Link>
+  );
+}
+
+function QuickLink({
+  title,
+  description,
+  href,
+  cta,
+}: {
+  title: string;
+  description: string;
+  href: string;
+  cta: string;
+}) {
+  return (
+    <div className={cx(brandCard, 'p-5')}>
+      <h2 className="text-lg font-semibold text-[#0f1f3b]">{title}</h2>
+      <p className={cx('mt-1 text-sm', subtleText)}>{description}</p>
+      <Link href={href} className="mt-3 inline-block underline decoration-2 underline-offset-4">
+        {cta}
+      </Link>
+    </div>
+  );
+}
