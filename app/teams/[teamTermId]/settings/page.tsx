@@ -1,51 +1,72 @@
-import { createClient } from '@/lib/supabase-server';
-import { saveTeamFeeAction } from './actions';
+'use client';
+import { useState } from 'react';
+import Link from 'next/link';
+import { supabase } from '@/lib/supabase'; // your current client singleton
 
-export default async function TeamSettingsPage({ params }: { params: { teamTermId: string } }) {
-  const supabase = createClient();
+export default function TeamSettingsPage({ params }: { params: { teamTermId: string } }) {
+  const teamTermId = params.teamTermId;
+  const [amount, setAmount] = useState<string>('');
+  const [due, setDue] = useState<string>('');
+  const [msg, setMsg] = useState<string | null>(null);
 
-  const { data: teamTerm, error } = await supabase
-    .from('team_terms')
-    .select('id, fee_amount, fee_due_date')
-    .eq('id', params.teamTermId)
-    .single();
+  async function loadInitial() {
+    const { data, error } = await supabase
+      .from('team_terms')
+      .select('fee_amount, fee_due_date')
+      .eq('id', teamTermId)
+      .single();
+    if (!error && data) {
+      setAmount(data.fee_amount ?? '');
+      setDue(data.fee_due_date ?? '');
+    } else if (error) {
+      setMsg(error.message);
+    }
+  }
 
-  if (error) return <div>Error: {error.message}</div>;
+  // lazy-load on first render
+  useState(() => { void loadInitial(); return undefined; });
 
-  const dueStr = typeof teamTerm?.fee_due_date === 'string' ? teamTerm.fee_due_date : '';
+  async function onSave(e: React.FormEvent) {
+    e.preventDefault();
+    setMsg(null);
+    const { error } = await supabase.rpc('rpc_set_team_fee', {
+      p_team_term_id: teamTermId,
+      p_amount: Number(amount || 0),
+      p_due_date: due || null,
+    });
+    if (error) setMsg(error.message);
+    else setMsg('Saved');
+  }
 
   return (
-    <div className="max-w-md space-y-6">
+    <main className="p-6 max-w-md space-y-4">
+      <Link href="/teams" className="underline">← Back to teams</Link>
       <h1 className="text-xl font-semibold">Team fee</h1>
-
-      <form action={saveTeamFeeAction} className="space-y-4 border p-4 rounded">
-        <input type="hidden" name="teamTermId" value={teamTerm.id} />
-
+      <form onSubmit={onSave} className="space-y-3 border rounded p-4">
         <div className="grid gap-1">
           <label className="text-sm">Fee amount</label>
           <input
-            name="feeAmount"
             type="number"
             step="0.01"
-            defaultValue={teamTerm.fee_amount ?? ''}
             min={0}
-            className="border rounded px-2 py-1 w-full"
+            value={amount}
+            onChange={e => setAmount(e.target.value)}
+            className="border rounded px-2 py-1"
             required
           />
         </div>
-
         <div className="grid gap-1">
           <label className="text-sm">Due date</label>
           <input
-            name="feeDueDate"
             type="date"
-            defaultValue={dueStr}
-            className="border rounded px-2 py-1 w-full"
+            value={due ?? ''}
+            onChange={e => setDue(e.target.value)}
+            className="border rounded px-2 py-1"
           />
         </div>
-
         <button type="submit" className="px-3 py-1 border rounded">Save</button>
+        {msg && <p className="text-sm">{msg}</p>}
       </form>
-    </div>
+    </main>
   );
 }
