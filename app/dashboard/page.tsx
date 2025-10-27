@@ -3,9 +3,11 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { supabase } from '@/lib/supabase';
+import { getSupabaseClient } from '@/lib/supabase';
 import LoadingState from '@/app/components/LoadingState';
 import { brandCard, brandContainer, brandHeading, brandPage, cx, subtleText } from '@/lib/theme';
+
+export const dynamic = 'force-dynamic';
 
 type Counts = {
   teams: number;
@@ -25,10 +27,10 @@ export default function DashboardPage() {
       setMsg(null);
 
       const [teams, players, events, terms] = await Promise.all([
-        supabase.from('teams').select('*', { count: 'exact', head: true }),
-        supabase.from('players').select('*', { count: 'exact', head: true }),
-        supabase.from('events').select('*', { count: 'exact', head: true }),
-        supabase.from('terms').select('*', { count: 'exact', head: true }),
+        getSupabaseClient().from('teams').select('*', { count: 'exact', head: true }),
+        getSupabaseClient().from('players').select('*', { count: 'exact', head: true }),
+        getSupabaseClient().from('events').select('*', { count: 'exact', head: true }),
+        getSupabaseClient().from('terms').select('*', { count: 'exact', head: true }),
       ]);
 
       const err = teams.error || players.error || events.error || terms.error;

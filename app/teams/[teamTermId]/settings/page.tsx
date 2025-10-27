@@ -1,7 +1,9 @@
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
-import { supabase } from '@/lib/supabase'; // your current client singleton
+import { getSupabaseClient } from '@/lib/supabase';
+
+export const dynamic = 'force-dynamic';
 
 export default function TeamSettingsPage({ params }: { params: { teamTermId: string } }) {
   const teamTermId = params.teamTermId;
@@ -10,7 +12,7 @@ export default function TeamSettingsPage({ params }: { params: { teamTermId: str
   const [msg, setMsg] = useState<string | null>(null);
 
   async function loadInitial() {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabaseClient()
       .from('team_terms')
       .select('fee_amount, fee_due_date')
       .eq('id', teamTermId)
@@ -29,7 +31,7 @@ export default function TeamSettingsPage({ params }: { params: { teamTermId: str
   async function onSave(e: React.FormEvent) {
     e.preventDefault();
     setMsg(null);
-    const { error } = await supabase.rpc('rpc_set_team_fee', {
+    const { error } = await getSupabaseClient().rpc('rpc_set_team_fee', {
       p_team_term_id: teamTermId,
       p_amount: Number(amount || 0),
       p_due_date: due || null,

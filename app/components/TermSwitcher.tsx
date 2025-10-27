@@ -1,15 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+import { createClient } from '@/lib/supabase';
 
 type Term = { id: string; year: number; term: number };
 
 export default function TermSwitcher() {
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
   const [terms, setTerms] = useState<Term[]>([]);
   const [termId, setTermId] = useState<string>('');
 

@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase';
 import LoadingState from '@/app/components/LoadingState';
 import EmptyState from '@/app/components/EmptyState';
 import {
@@ -17,10 +17,7 @@ import {
   subtleText
 } from '@/lib/theme';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+export const dynamic = 'force-dynamic';
 
 type TeamRow = {
   id: string;            // teams.id
@@ -31,6 +28,10 @@ type TeamRow = {
 };
 
 export default function TeamsPage() {
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
   const [rows, setRows] = useState<TeamRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState<string | null>(null);

@@ -20,3 +20,9 @@ export const subtleText = 'text-[#0f1f3b]/70';
 
 export const primaryActionButton =
   'inline-flex items-center justify-center rounded-md border border-[#172F56] px-4 py-2 font-semibold text-white bg-[#172F56] hover:bg-[#0b1730] transition';
+
+export const secondaryActionButton =
+  'inline-flex items-center justify-center rounded-md border border-[#172F56] px-4 py-2 font-semibold text-[#172F56] bg-white hover:bg-[#f0f4f8] transition';
+
+export const dangerActionButton =
+  'inline-flex items-center justify-center rounded-md border border-[#c41d5e] px-4 py-2 font-semibold text-white bg-[#c41d5e] hover:bg-[#a01749] transition';
