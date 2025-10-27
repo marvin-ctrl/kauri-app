@@ -1,3 +1,4 @@
+// app/teams/page.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -38,11 +39,12 @@ export default function TeamsPage() {
     setLoading(true);
     setMsg(null);
 
-    // 1) Get current term (adjust if you already store active term elsewhere)
+    // Get current term by year/term (since start_date is null in your schema)
     const { data: term, error: termErr } = await supabase
       .from('terms')
-      .select('id')
-      .order('start_date', { ascending: false })
+      .select('id, year, term')
+      .order('year', { ascending: false })
+      .order('term', { ascending: false })
       .limit(1)
       .maybeSingle();
 
@@ -54,10 +56,10 @@ export default function TeamsPage() {
     }
     const currentTermId = term?.id;
 
-    // 2) Load teams
+    // Load teams
     const { data: teams, error: teamsErr } = await supabase
       .from('teams')
-      .select('id,name')
+      .select('id, name')
       .order('name', { ascending: true });
 
     if (teamsErr) {
@@ -67,8 +69,8 @@ export default function TeamsPage() {
       return;
     }
 
-    // 3) If we have a current term, load team_terms for those teams in that term
-    let ttMap = new Map<string, { id: string; fee_amount: number | null; fee_due_date: string | null }>();
+    // Load team_terms for the current term, mapped by team_id
+    let ttByTeamId = new Map<string, { id: string; fee_amount: number | null; fee_due_date: string | null }>();
     if (currentTermId && teams && teams.length) {
       const teamIds = teams.map(t => t.id);
       const { data: tterms, error: ttErr } = await supabase
@@ -79,19 +81,23 @@ export default function TeamsPage() {
 
       if (ttErr) {
         setMsg(`Error loading team terms: ${ttErr.message}`);
-      } else {
-        ttMap = new Map(
-          (tterms || []).map(tt => [
-            tt.team_id as string,
-            { id: tt.id as string, fee_amount: (tt.fee_amount as number | null) ?? null, fee_due_date: (tt.fee_due_date as string | null) ?? null }
+      } else if (tterms) {
+        ttByTeamId = new Map(
+          tterms.map(tt => [
+            String(tt.team_id),
+            {
+              id: String(tt.id),
+              fee_amount: (tt.fee_amount as number | null) ?? null,
+              fee_due_date: (tt.fee_due_date as string | null) ?? null
+            }
           ])
         );
       }
     }
 
-    // 4) Merge for render
+    // Merge for render
     const merged: TeamRow[] = (teams || []).map(t => {
-      const tt = ttMap.get(t.id);
+      const tt = ttByTeamId.get(t.id);
       return {
         id: t.id,
         name: t.name,
@@ -129,7 +135,7 @@ export default function TeamsPage() {
         <header className={cx(brandCard, 'flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between')}>
           <div className="space-y-1">
             <h1 className={cx(brandHeading, 'text-3xl sm:text-4xl')}>Teams</h1>
-            <p className={cx('text-sm', subtleText)}>Organise squads, assign coaches, and keep rosters tidy.</p>
+            <p className={cx('text-sm', subtleText)}>Organise squads, assign coaches, track fees by term.</p>
           </div>
           <Link href="/teams/new" className={primaryActionButton}>
             New team
@@ -166,12 +172,10 @@ export default function TeamsPage() {
                         </Link>
                         <span className="text-white/40">•</span>
 
-                        {/* Fee settings requires team_terms.id. If missing, prompt to create team_term for current term. */}
                         {t.teamTermId ? (
                           <Link
                             href={`/teams/${t.teamTermId}/settings`}
-                            className="underline decoration-2 underline-offset-4 hover:text-[#0b1730]"
-                          >
+                            className="underline decoration-2 underline-offset-4 hover:text-[#0b1730]">
                             Fee settings
                           </Link>
                         ) : (
@@ -181,8 +185,7 @@ export default function TeamsPage() {
                         <span className="text-white/40">•</span>
                         <button
                           onClick={() => removeTeam(t.id)}
-                          className="text-[#c41d5e] underline decoration-2 underline-offset-4 transition hover:text-[#9b1549]"
-                        >
+                          className="text-[#c41d5e] underline decoration-2 underline-offset-4 transition hover:text-[#9b1549]">
                           Delete
                         </button>
                       </div>
