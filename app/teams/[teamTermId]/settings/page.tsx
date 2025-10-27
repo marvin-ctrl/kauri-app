@@ -1,9 +1,7 @@
-import { createClient } from '@/lib/supabase-server'; // adjust path
+import { createClient } from '@/lib/supabase-server';
 import { saveTeamFeeAction } from './actions';
 
-export default async function TeamSettingsPage({
-  params,
-}: { params: { teamTermId: string } }) {
+export default async function TeamSettingsPage({ params }: { params: { teamTermId: string } }) {
   const supabase = createClient();
 
   const { data: teamTerm, error } = await supabase
@@ -12,13 +10,9 @@ export default async function TeamSettingsPage({
     .eq('id', params.teamTermId)
     .single();
 
-  if (error) {
-    return <div>Error loading team term: {error.message}</div>;
-  }
+  if (error) return <div>Error: {error.message}</div>;
 
-  // ensure string for <input type="date">
-  const due = teamTerm?.fee_due_date ?? '';
-  const dueStr = typeof due === 'string' ? due : '';
+  const dueStr = typeof teamTerm?.fee_due_date === 'string' ? teamTerm.fee_due_date : '';
 
   return (
     <div className="max-w-md space-y-6">
