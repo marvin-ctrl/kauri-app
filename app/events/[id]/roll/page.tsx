@@ -52,80 +52,86 @@ export default function EventRollPage() {
 
   useEffect(() => {
     (async () => {
-      setLoading(true);
-      setMsg(null);
+      try {
+        setLoading(true);
+        setMsg(null);
 
-      // load event
-      const ev = await supabase
-        .from('events')
-        .select('title, type, starts_at, team_term_id')
-        .eq('id', String(eventId))
-        .maybeSingle();
-      if (ev.error || !ev.data) { setMsg(ev.error?.message || 'Event not found'); setLoading(false); return; }
+        // load event
+        const ev = await supabase
+          .from('events')
+          .select('title, type, starts_at, team_term_id')
+          .eq('id', String(eventId))
+          .maybeSingle();
+        if (ev.error || !ev.data) { setMsg(ev.error?.message || 'Event not found'); setLoading(false); return; }
 
-      setEventTitle(ev.data.title || ev.data.type);
-      setWhenStr(new Date(ev.data.starts_at).toLocaleString('en-NZ', {
-        weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-      }));
-      setTeamTermId(ev.data.team_term_id ?? null);
+        setEventTitle(ev.data.title || ev.data.type);
+        setWhenStr(new Date(ev.data.starts_at).toLocaleString('en-NZ', {
+          weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+        }));
+        setTeamTermId(ev.data.team_term_id ?? null);
 
-      // Get base list of player_term_ids to take roll for.
-      // If the event is team-specific, use memberships for that team_term_id.
-      // Else, use all player_terms for the current term.
-      const termId = localStorage.getItem('kauri.termId');
-      if (!termId) { setMsg('Select a term in the header.'); setLoading(false); return; }
+        // Get base list of player_term_ids to take roll for.
+        // If the event is team-specific, use memberships for that team_term_id.
+        // Else, use all player_terms for the current term.
+        const termId = localStorage.getItem('kauri.termId');
+        if (!termId) { setMsg('Select a term in the header.'); setLoading(false); return; }
 
-      let pts: { id: string, players: { first_name: string, last_name: string, preferred_name: string|null, jersey_no: number|null } }[] = [];
+        let pts: { id: string, players: { first_name: string, last_name: string, preferred_name: string|null, jersey_no: number|null } }[] = [];
 
-      if (ev.data.team_term_id) {
-        // roster for this team
-        const mem = await supabase
-          .from('memberships')
-          .select(`
-            player_terms (
-              id,
-              players ( first_name, last_name, preferred_name, jersey_no )
-            )
-          `)
-          .eq('team_term_id', ev.data.team_term_id);
-        pts = (mem.data || []).map((m: any) => m.player_terms);
-      } else {
-        // all registered players in the term
-        const all = await supabase
-          .from('player_terms')
-          .select('id, players ( first_name, last_name, preferred_name, jersey_no )')
-          .eq('term_id', termId);
-        pts = (all.data || []) as any;
+        if (ev.data.team_term_id) {
+          // roster for this team
+          const mem = await supabase
+            .from('memberships')
+            .select(`
+              player_terms (
+                id,
+                players ( first_name, last_name, preferred_name, jersey_no )
+              )
+            `)
+            .eq('team_term_id', ev.data.team_term_id);
+          pts = (mem.data || []).map((m: any) => m.player_terms);
+        } else {
+          // all registered players in the term
+          const all = await supabase
+            .from('player_terms')
+            .select('id, players ( first_name, last_name, preferred_name, jersey_no )')
+            .eq('term_id', termId);
+          pts = (all.data || []) as any;
+        }
+
+        // seed rows
+        const base: PlayerRow[] = pts.map((pt: any) => ({
+          player_term_id: pt.id,
+          first_name: pt.players.first_name,
+          last_name: pt.players.last_name,
+          preferred_name: pt.players.preferred_name,
+          jersey_no: pt.players.jersey_no,
+          status: null,
+          notes: null
+        }));
+
+        // load any existing attendance for this event
+        const att = await supabase
+          .from('attendance')
+          .select('player_term_id, status, notes')
+          .eq('event_id', String(eventId));
+
+        const byPT = new Map<string, {status: any, notes: string|null}>();
+        (att.data || []).forEach(r => byPT.set(r.player_term_id as string, { status: r.status, notes: r.notes ?? null }));
+
+        // merge
+        const merged = base.map(r => {
+          const ex = byPT.get(r.player_term_id);
+          return ex ? { ...r, status: ex.status as any, notes: ex.notes } : r;
+        });
+
+        setRows(merged);
+        setLoading(false);
+      } catch (error: any) {
+        console.error('Error loading roll page:', error);
+        setMsg(`Error loading page: ${error?.message || 'Unknown error'}`);
+        setLoading(false);
       }
-
-      // seed rows
-      const base: PlayerRow[] = pts.map((pt: any) => ({
-        player_term_id: pt.id,
-        first_name: pt.players.first_name,
-        last_name: pt.players.last_name,
-        preferred_name: pt.players.preferred_name,
-        jersey_no: pt.players.jersey_no,
-        status: null,
-        notes: null
-      }));
-
-      // load any existing attendance for this event
-      const att = await supabase
-        .from('attendance')
-        .select('player_term_id, status, notes')
-        .eq('event_id', String(eventId));
-
-      const byPT = new Map<string, {status: any, notes: string|null}>();
-      (att.data || []).forEach(r => byPT.set(r.player_term_id as string, { status: r.status, notes: r.notes ?? null }));
-
-      // merge
-      const merged = base.map(r => {
-        const ex = byPT.get(r.player_term_id);
-        return ex ? { ...r, status: ex.status as any, notes: ex.notes } : r;
-      });
-
-      setRows(merged);
-      setLoading(false);
     })();
   }, [eventId]);
 
