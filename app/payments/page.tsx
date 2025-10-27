@@ -99,34 +99,63 @@ export default function PaymentsPage() {
   async function setTeamFee(teamTermId: string, amount: number) {
     try {
       // Upsert team fee
-      await supabase.from('team_fees').upsert({
+      const { error: feeError } = await supabase.from('team_fees').upsert({
         team_term_id: teamTermId,
         amount
       }, { onConflict: 'team_term_id' });
 
+      if (feeError) {
+        alert(`Error setting fee: ${feeError.message}`);
+        console.error('Fee error:', feeError);
+        return;
+      }
+
       // Create/update player payments for all players in this team
-      const { data: memberships } = await supabase
+      const { data: memberships, error: membershipsError } = await supabase
         .from('memberships')
         .select('player_term_id')
         .eq('team_term_id', teamTermId);
 
-      if (memberships) {
+      if (membershipsError) {
+        alert(`Error loading memberships: ${membershipsError.message}`);
+        return;
+      }
+
+      if (memberships && memberships.length > 0) {
+        // Get existing payments to preserve amount_paid
+        const playerTermIds = memberships.map(m => m.player_term_id);
+        const { data: existingPayments } = await supabase
+          .from('player_payments')
+          .select('player_term_id, amount_paid')
+          .in('player_term_id', playerTermIds)
+          .eq('team_term_id', teamTermId);
+
+        const existingPaymentsMap = new Map(
+          existingPayments?.map(p => [p.player_term_id, p.amount_paid]) || []
+        );
+
         const paymentRecords = memberships.map(m => ({
           player_term_id: m.player_term_id,
           team_term_id: teamTermId,
           amount_due: amount,
-          amount_paid: 0
+          amount_paid: existingPaymentsMap.get(m.player_term_id) || 0
         }));
 
-        await supabase.from('player_payments').upsert(paymentRecords, {
-          onConflict: 'player_term_id,team_term_id',
-          ignoreDuplicates: false
+        const { error: paymentsError } = await supabase.from('player_payments').upsert(paymentRecords, {
+          onConflict: 'player_term_id,team_term_id'
         });
+
+        if (paymentsError) {
+          alert(`Error updating payments: ${paymentsError.message}`);
+          console.error('Payments error:', paymentsError);
+          return;
+        }
       }
 
       setEditingTeamFee(null);
       loadData();
-    } catch (error) {
+    } catch (error: any) {
+      alert(`Error: ${error.message}`);
       console.error('Error setting team fee:', error);
     }
   }

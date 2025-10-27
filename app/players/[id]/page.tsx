@@ -18,11 +18,20 @@ type Player = {
   photo_storage_path: string | null;
 };
 
+type PaymentInfo = {
+  id: string;
+  teamName: string;
+  amountDue: number;
+  amountPaid: number;
+  paid: boolean;
+};
+
 export default function PlayerProfilePage() {
   const { id } = useParams<{ id: string }>();
   const [p, setP] = useState<Player | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [payments, setPayments] = useState<PaymentInfo[]>([]);
 
   useEffect(() => {
     (async () => {
@@ -48,6 +57,42 @@ export default function PlayerProfilePage() {
         } else if (data.photo_url) {
           // Fallback to old photo_url field
           setPhotoUrl(data.photo_url);
+        }
+
+        // Load payment info
+        const termId = localStorage.getItem('kauri.termId');
+        if (termId) {
+          // Get player_term_id for current term
+          const { data: playerTermData } = await supabase
+            .from('player_terms')
+            .select('id')
+            .eq('player_id', pid)
+            .eq('term_id', termId)
+            .maybeSingle();
+
+          if (playerTermData) {
+            // Get all payments for this player in current term
+            const { data: paymentData } = await supabase
+              .from('player_payments')
+              .select(`
+                id,
+                amount_due,
+                amount_paid,
+                paid,
+                team_terms!inner(teams!inner(name))
+              `)
+              .eq('player_term_id', playerTermData.id);
+
+            if (paymentData) {
+              setPayments(paymentData.map((p: any) => ({
+                id: p.id,
+                teamName: p.team_terms.teams.name,
+                amountDue: p.amount_due,
+                amountPaid: p.amount_paid,
+                paid: p.paid
+              })));
+            }
+          }
         }
       }
     })();
@@ -116,6 +161,67 @@ export default function PlayerProfilePage() {
             </dl>
           </div>
         </section>
+
+        {/* Payments Section */}
+        {payments.length > 0 && (
+          <section className="bg-white border border-neutral-200 rounded-xl shadow-sm p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold">Payments (NZD)</h2>
+              <Link href="/payments" className="text-sm underline text-blue-700 hover:text-blue-800">
+                View all payments
+              </Link>
+            </div>
+
+            <div className="space-y-3">
+              {payments.map(payment => {
+                const balance = payment.amountDue - payment.amountPaid;
+                return (
+                  <div key={payment.id} className="flex items-center justify-between border-b border-neutral-100 pb-3 last:border-0">
+                    <div>
+                      <p className="font-semibold">{payment.teamName}</p>
+                      <p className="text-sm text-neutral-600">
+                        ${payment.amountPaid.toFixed(2)} of ${payment.amountDue.toFixed(2)} paid
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      {payment.paid ? (
+                        <span className="inline-block rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-800">
+                          Paid
+                        </span>
+                      ) : (
+                        <div>
+                          <span className="inline-block rounded-full bg-yellow-100 px-3 py-1 text-xs font-semibold text-yellow-800 mb-1">
+                            Unpaid
+                          </span>
+                          <p className="text-sm font-semibold text-red-600">
+                            ${balance.toFixed(2)} due
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="mt-4 pt-4 border-t border-neutral-200">
+              <div className="flex justify-between text-sm">
+                <span className="font-semibold">Total Due:</span>
+                <span className="font-bold">${payments.reduce((sum, p) => sum + p.amountDue, 0).toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="font-semibold">Total Paid:</span>
+                <span className="font-bold text-green-600">${payments.reduce((sum, p) => sum + p.amountPaid, 0).toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between text-sm mt-1">
+                <span className="font-semibold">Balance:</span>
+                <span className="font-bold text-red-600">
+                  ${payments.reduce((sum, p) => sum + (p.amountDue - p.amountPaid), 0).toFixed(2)}
+                </span>
+              </div>
+            </div>
+          </section>
+        )}
 
         <div>
           <Link href="/players" className="underline text-blue-700 hover:text-blue-800">Back to players</Link>

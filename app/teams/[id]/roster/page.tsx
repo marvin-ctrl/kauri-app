@@ -13,11 +13,15 @@ type Team = { id: string; name: string };
 type RosterRow = {
   membershipId: string;
   playerId: string;
+  playerTermId: string;
   firstName: string;
   lastName: string;
   preferredName: string | null;
   jerseyNo: number | null;
   role: string;
+  paid?: boolean;
+  amountDue?: number;
+  amountPaid?: number;
 };
 
 export default function TeamRosterPage() {
@@ -96,7 +100,16 @@ export default function TeamRosterPage() {
         .select('id, first_name, last_name, preferred_name, jersey_no')
         .in('id', playerIds);
 
-      // 7. Build roster by combining everything
+      // 7. Get payment info
+      const { data: paymentData } = await supabase
+        .from('player_payments')
+        .select('player_term_id, amount_due, amount_paid, paid')
+        .in('player_term_id', playerTermIds)
+        .eq('team_term_id', teamTerm.id);
+
+      const paymentMap = new Map(paymentData?.map(p => [p.player_term_id, p]) || []);
+
+      // 8. Build roster by combining everything
       const playerMap = new Map(players?.map(p => [p.id, p]) || []);
       const playerTermMap = new Map(playerTerms.map(pt => [pt.id, pt.player_id]));
 
@@ -104,18 +117,24 @@ export default function TeamRosterPage() {
         .map(m => {
           const playerId = playerTermMap.get(m.player_term_id);
           if (!playerId) return null;
-          
+
           const player = playerMap.get(playerId);
           if (!player) return null;
+
+          const payment = paymentMap.get(m.player_term_id);
 
           return {
             membershipId: m.id,
             playerId: player.id,
+            playerTermId: m.player_term_id,
             firstName: player.first_name,
             lastName: player.last_name,
             preferredName: player.preferred_name,
             jerseyNo: player.jersey_no,
-            role: m.role || 'player'
+            role: m.role || 'player',
+            paid: payment?.paid,
+            amountDue: payment?.amount_due,
+            amountPaid: payment?.amount_paid
           };
         })
         .filter((row): row is RosterRow => row !== null);
@@ -197,13 +216,24 @@ export default function TeamRosterPage() {
                     key={row.membershipId}
                     className="flex items-center justify-between border border-neutral-200 rounded-md p-3 hover:bg-neutral-50"
                   >
-                    <div className="text-sm">
-                      <span className="font-semibold">{name}</span>
-                      {row.jerseyNo != null && (
-                        <span className="ml-2 text-neutral-700">#{row.jerseyNo}</span>
-                      )}
-                      {row.role && row.role !== 'player' && (
-                        <span className="ml-2 text-neutral-700">• {row.role}</span>
+                    <div className="text-sm flex items-center gap-2">
+                      <div>
+                        <span className="font-semibold">{name}</span>
+                        {row.jerseyNo != null && (
+                          <span className="ml-2 text-neutral-700">#{row.jerseyNo}</span>
+                        )}
+                        {row.role && row.role !== 'player' && (
+                          <span className="ml-2 text-neutral-700">• {row.role}</span>
+                        )}
+                      </div>
+                      {row.amountDue !== undefined && (
+                        <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${
+                          row.paid
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {row.paid ? 'Paid' : `$${((row.amountDue || 0) - (row.amountPaid || 0)).toFixed(0)} due`}
+                        </span>
                       )}
                     </div>
                     <div className="flex items-center gap-2">
