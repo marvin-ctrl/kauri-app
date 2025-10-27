@@ -1,51 +1,24 @@
+'use server';
+
 import { createClient } from '@/lib/supabase-server';
-import { saveTeamFeeAction } from './actions';
 
-export default async function TeamSettingsPage({ params }: { params: { teamTermId: string } }) {
+export async function saveTeamFeeAction(formData: FormData) {
+  const teamTermId = formData.get('teamTermId') as string;
+  const amountStr = (formData.get('feeAmount') as string) ?? '0';
+  const dueStr = (formData.get('feeDueDate') as string) || null;
+
+  const amount = Number(amountStr);
+  if (!Number.isFinite(amount) || amount < 0) {
+    throw new Error('Fee amount must be a non-negative number');
+  }
+
+  const due = dueStr ? new Date(dueStr).toISOString().slice(0, 10) : null;
+
   const supabase = createClient();
-
-  const { data: teamTerm, error } = await supabase
-    .from('team_terms')
-    .select('id, fee_amount, fee_due_date')
-    .eq('id', params.teamTermId)
-    .single();
-
-  if (error) return <div>Error: {error.message}</div>;
-
-  const dueStr = typeof teamTerm?.fee_due_date === 'string' ? teamTerm.fee_due_date : '';
-
-  return (
-    <div className="max-w-md space-y-6">
-      <h1 className="text-xl font-semibold">Team fee</h1>
-
-      <form action={saveTeamFeeAction} className="space-y-4 border p-4 rounded">
-        <input type="hidden" name="teamTermId" value={teamTerm.id} />
-
-        <div className="grid gap-1">
-          <label className="text-sm">Fee amount</label>
-          <input
-            name="feeAmount"
-            type="number"
-            step="0.01"
-            defaultValue={teamTerm.fee_amount ?? ''}
-            min={0}
-            className="border rounded px-2 py-1 w-full"
-            required
-          />
-        </div>
-
-        <div className="grid gap-1">
-          <label className="text-sm">Due date</label>
-          <input
-            name="feeDueDate"
-            type="date"
-            defaultValue={dueStr}
-            className="border rounded px-2 py-1 w-full"
-          />
-        </div>
-
-        <button type="submit" className="px-3 py-1 border rounded">Save</button>
-      </form>
-    </div>
-  );
+  const { error } = await supabase.rpc('rpc_set_team_fee', {
+    p_team_term_id: teamTermId,
+    p_amount: amount,
+    p_due_date: due,
+  });
+  if (error) throw new Error(error.message);
 }
