@@ -3,12 +3,9 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+import Image from 'next/image';
+import { supabase } from '@/lib/supabase';
+import { getPlayerPhotoSignedUrl } from '@/lib/storage';
 
 type Player = {
   id: string;
@@ -17,12 +14,15 @@ type Player = {
   preferred_name: string | null;
   jersey_no: number | null;
   dob: string | null;
+  photo_url: string | null;
+  photo_storage_path: string | null;
 };
 
 export default function PlayerProfilePage() {
   const { id } = useParams<{ id: string }>();
   const [p, setP] = useState<Player | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -36,11 +36,23 @@ export default function PlayerProfilePage() {
 
         const { data, error } = await supabase
           .from('players')
-          .select('id, first_name, last_name, preferred_name, jersey_no, dob')
+          .select('id, first_name, last_name, preferred_name, jersey_no, dob, photo_url, photo_storage_path')
           .eq('id', pid)
           .maybeSingle();
         if (error) setMsg(error.message);
-        setP(data || null);
+
+        if (data) {
+          setP(data as Player);
+
+          // Load photo from storage if available
+          if (data.photo_storage_path) {
+            const signedUrl = await getPlayerPhotoSignedUrl(data.photo_storage_path);
+            setPhotoUrl(signedUrl);
+          } else if (data.photo_url) {
+            // Fallback to old photo_url field
+            setPhotoUrl(data.photo_url);
+          }
+        }
         setLoading(false);
       } catch (error: any) {
         console.error('Error loading player:', error);
@@ -73,28 +85,46 @@ export default function PlayerProfilePage() {
         </header>
 
         <section className="bg-white border border-neutral-200 rounded-xl shadow-sm p-6">
-          <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-            <div>
-              <dt className="text-neutral-600">First name</dt>
-              <dd className="font-semibold">{p.first_name}</dd>
-            </div>
-            <div>
-              <dt className="text-neutral-600">Last name</dt>
-              <dd className="font-semibold">{p.last_name}</dd>
-            </div>
-            <div>
-              <dt className="text-neutral-600">Preferred name</dt>
-              <dd className="font-semibold">{p.preferred_name ?? '—'}</dd>
-            </div>
-            <div>
-              <dt className="text-neutral-600">Jersey</dt>
-              <dd className="font-semibold">{p.jersey_no ?? '—'}</dd>
-            </div>
-            <div className="sm:col-span-2">
-              <dt className="text-neutral-600">Date of birth</dt>
-              <dd className="font-semibold">{p.dob ?? '—'}</dd>
-            </div>
-          </dl>
+          <div className="flex flex-col sm:flex-row gap-6">
+            {/* Player Photo */}
+            {photoUrl && (
+              <div className="flex-shrink-0">
+                <div className="relative w-32 h-32 sm:w-40 sm:h-40 rounded-lg overflow-hidden border-2 border-neutral-300 bg-neutral-100">
+                  <Image
+                    src={photoUrl}
+                    alt={`${name}'s photo`}
+                    fill
+                    className="object-cover"
+                    unoptimized
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Player Details */}
+            <dl className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+              <div>
+                <dt className="text-neutral-600">First name</dt>
+                <dd className="font-semibold">{p.first_name}</dd>
+              </div>
+              <div>
+                <dt className="text-neutral-600">Last name</dt>
+                <dd className="font-semibold">{p.last_name}</dd>
+              </div>
+              <div>
+                <dt className="text-neutral-600">Preferred name</dt>
+                <dd className="font-semibold">{p.preferred_name ?? '—'}</dd>
+              </div>
+              <div>
+                <dt className="text-neutral-600">Jersey</dt>
+                <dd className="font-semibold">{p.jersey_no ?? '—'}</dd>
+              </div>
+              <div className="sm:col-span-2">
+                <dt className="text-neutral-600">Date of birth</dt>
+                <dd className="font-semibold">{p.dob ?? '—'}</dd>
+              </div>
+            </dl>
+          </div>
         </section>
 
         <div>

@@ -2,12 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+import { supabase } from '@/lib/supabase';
+import { uploadAndSavePlayerPhoto, getPlayerPhotoSignedUrl } from '@/lib/storage';
+import PhotoUpload from '@/app/components/PhotoUpload';
 
 type Player = {
   id: string;
@@ -19,6 +16,8 @@ type Player = {
   status: string | null;            // prospect|active|inactive|alumni
   notes: string | null;
   photo_url: string | null;
+  photo_storage_path: string | null;
+  photo_updated_at: string | null;
 };
 
 export default function EditPlayerPage() {
@@ -38,6 +37,13 @@ export default function EditPlayerPage() {
   const [status, setStatus] = useState('active');
   const [notes, setNotes] = useState('');
   const [photoUrl, setPhotoUrl] = useState('');
+
+  // photo upload state
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoStoragePath, setPhotoStoragePath] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [currentPhotoUrl, setCurrentPhotoUrl] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -63,6 +69,17 @@ export default function EditPlayerPage() {
         setStatus(p.status || 'active');
         setNotes(p.notes || '');
         setPhotoUrl(p.photo_url || '');
+        setPhotoStoragePath(p.photo_storage_path || null);
+
+        // Load photo from storage if available
+        if (p.photo_storage_path) {
+          const signedUrl = await getPlayerPhotoSignedUrl(p.photo_storage_path);
+          setCurrentPhotoUrl(signedUrl);
+        } else if (p.photo_url) {
+          // Fallback to old photo_url field
+          setCurrentPhotoUrl(p.photo_url);
+        }
+
         setLoading(false);
       } catch (error: any) {
         console.error('Error loading player for edit:', error);
@@ -76,6 +93,27 @@ export default function EditPlayerPage() {
     e.preventDefault();
     setMsg(null);
     setSaving(true);
+    setUploadError(null);
+
+    // Handle photo upload if a new file was selected
+    if (photoFile) {
+      setUploading(true);
+      const uploadResult = await uploadAndSavePlayerPhoto(
+        id,
+        photoFile,
+        photoStoragePath
+      );
+      setUploading(false);
+
+      if (!uploadResult.success) {
+        setUploadError(uploadResult.error || 'Failed to upload photo');
+        setSaving(false);
+        return;
+      }
+
+      // Update storage path after successful upload
+      setPhotoStoragePath(uploadResult.path || null);
+    }
 
     const payload = {
       first_name: firstName.trim(),
@@ -194,15 +232,20 @@ export default function EditPlayerPage() {
             </select>
           </label>
 
-          <label className="block text-sm font-medium">
-            Photo URL (optional)
-            <input
-              value={photoUrl}
-              onChange={e=>setPhotoUrl(e.target.value)}
-              placeholder="https://…"
-              className="mt-1 w-full border border-neutral-300 rounded-md px-3 py-2 bg-white"
-            />
-          </label>
+          <PhotoUpload
+            currentPhotoUrl={currentPhotoUrl}
+            onPhotoSelected={(file) => {
+              setPhotoFile(file);
+              setUploadError(null);
+            }}
+            onPhotoRemove={() => {
+              setPhotoFile(null);
+              setCurrentPhotoUrl(null);
+              setUploadError(null);
+            }}
+            uploading={uploading}
+            error={uploadError}
+          />
 
           <label className="block text-sm font-medium">
             Notes
