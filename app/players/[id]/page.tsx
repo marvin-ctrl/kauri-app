@@ -23,26 +23,36 @@ export default function PlayerProfilePage() {
   const { id } = useParams<{ id: string }>();
   const [p, setP] = useState<Player | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     (async () => {
-      // simple guard for bad URLs
-      const pid = String(id);
-      const isUuid = /^[0-9a-f-]{36}$/i.test(pid);
-      if (!isUuid) { setMsg('Invalid player id in URL.'); return; }
+      try {
+        setLoading(true);
+        // simple guard for bad URLs
+        const pid = String(id);
+        const isUuid = /^[0-9a-f-]{36}$/i.test(pid);
+        if (!isUuid) { setMsg('Invalid player id in URL.'); setLoading(false); return; }
 
-      const { data, error } = await supabase
-        .from('players')
-        .select('id, first_name, last_name, preferred_name, jersey_no, dob')
-        .eq('id', pid)
-        .maybeSingle();
-      if (error) setMsg(error.message);
-      setP(data || null);
+        const { data, error } = await supabase
+          .from('players')
+          .select('id, first_name, last_name, preferred_name, jersey_no, dob')
+          .eq('id', pid)
+          .maybeSingle();
+        if (error) setMsg(error.message);
+        setP(data || null);
+        setLoading(false);
+      } catch (error: any) {
+        console.error('Error loading player:', error);
+        setMsg(`Error loading player: ${error?.message || 'Unknown error'}`);
+        setLoading(false);
+      }
     })();
   }, [id]);
 
+  if (loading) return <main className="min-h-screen grid place-items-center">Loading…</main>;
   if (msg && !p) return <main className="min-h-screen grid place-items-center">{msg}</main>;
-  if (!p) return <main className="min-h-screen grid place-items-center">Loading…</main>;
+  if (!p) return <main className="min-h-screen grid place-items-center">Player not found</main>;
 
   const name = p.preferred_name || `${p.first_name} ${p.last_name}`;
 

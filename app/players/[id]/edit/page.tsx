@@ -41,28 +41,34 @@ export default function EditPlayerPage() {
 
   useEffect(() => {
     (async () => {
-      const { data, error } = await supabase
-        .from('players')
-        .select('*')
-        .eq('id', id)
-        .maybeSingle();
+      try {
+        const { data, error } = await supabase
+          .from('players')
+          .select('*')
+          .eq('id', id)
+          .maybeSingle();
 
-      if (error || !data) {
-        setMsg(error ? `Error: ${error.message}` : 'Player not found.');
+        if (error || !data) {
+          setMsg(error ? `Error: ${error.message}` : 'Player not found.');
+          setLoading(false);
+          return;
+        }
+
+        const p = data as Player;
+        setFirst(p.first_name || '');
+        setLast(p.last_name || '');
+        setPreferred(p.preferred_name || '');
+        setDob(p.dob || '');
+        setJersey(p.jersey_no ?? '');
+        setStatus(p.status || 'active');
+        setNotes(p.notes || '');
+        setPhotoUrl(p.photo_url || '');
         setLoading(false);
-        return;
+      } catch (error: any) {
+        console.error('Error loading player for edit:', error);
+        setMsg(`Error loading player: ${error?.message || 'Unknown error'}`);
+        setLoading(false);
       }
-
-      const p = data as Player;
-      setFirst(p.first_name || '');
-      setLast(p.last_name || '');
-      setPreferred(p.preferred_name || '');
-      setDob(p.dob || '');
-      setJersey(p.jersey_no ?? '');
-      setStatus(p.status || 'active');
-      setNotes(p.notes || '');
-      setPhotoUrl(p.photo_url || '');
-      setLoading(false);
     })();
   }, [id]);
 

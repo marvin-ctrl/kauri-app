@@ -24,11 +24,17 @@ export default function EditTermPage() {
 
   useEffect(() => {
     (async () => {
-      const { data, error } = await supabase.from('terms').select('id,year,term,start_date,end_date').eq('id', id).maybeSingle();
-      if (error || !data) { setMsg(error ? `Error: ${error.message}` : 'Not found'); setLoading(false); return; }
-      setRow(data); setYear(data.year); setTerm(data.term);
-      setStart(data.start_date || ''); setEnd(data.end_date || '');
-      setLoading(false);
+      try {
+        const { data, error } = await supabase.from('terms').select('id,year,term,start_date,end_date').eq('id', id).maybeSingle();
+        if (error || !data) { setMsg(error ? `Error: ${error.message}` : 'Not found'); setLoading(false); return; }
+        setRow(data); setYear(data.year); setTerm(data.term);
+        setStart(data.start_date || ''); setEnd(data.end_date || '');
+        setLoading(false);
+      } catch (error: any) {
+        console.error('Error loading term for edit:', error);
+        setMsg(`Error loading term: ${error?.message || 'Unknown error'}`);
+        setLoading(false);
+      }
     })();
   }, [id]);
 
