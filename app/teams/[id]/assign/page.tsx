@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
+import { getActiveTermId, NO_RECORDS_FOR_SELECTED_TERM } from '@/lib/active-term';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -33,12 +34,27 @@ export default function AssignPlayersToTeamPage() {
         .maybeSingle();
       setTeam(teamData || null);
 
-      // Load all players
-      const { data: playersData } = await supabase
-        .from('players')
-        .select('id, first_name, last_name, preferred_name')
-        .order('first_name');
-      setPlayers(playersData || []);
+      const { termId, message } = getActiveTermId();
+      if (!termId) {
+        setMsg(message);
+        setPlayers([]);
+        return;
+      }
+
+      const { data: playersData, error: playersErr } = await supabase
+        .from('player_terms')
+        .select('players!inner(id, first_name, last_name, preferred_name)')
+        .eq('term_id', termId);
+
+      if (playersErr) {
+        setMsg(playersErr.message);
+        setPlayers([]);
+        return;
+      }
+
+      const scopedPlayers = (playersData || []).map((row: any) => row.players as Player);
+      setPlayers(scopedPlayers);
+      if (!scopedPlayers.length) setMsg(NO_RECORDS_FOR_SELECTED_TERM);
     })();
   }, [teamId]);
 
@@ -59,9 +75,9 @@ export default function AssignPlayersToTeamPage() {
 
     setSaving(true);
     try {
-      const termId = localStorage.getItem('kauri.termId');
+      const { termId, message } = getActiveTermId();
       if (!termId) {
-        setMsg('Select a term in the header.');
+        setMsg(message);
         setSaving(false);
         return;
       }
@@ -179,7 +195,7 @@ export default function AssignPlayersToTeamPage() {
                   );
                 })}
                 {players.length === 0 && (
-                  <li className="text-sm text-neutral-700">No players yet.</li>
+                  <li className="text-sm text-neutral-700">No records for selected term</li>
                 )}
               </ul>
             </div>
