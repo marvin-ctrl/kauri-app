@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
+import { getActiveTermId, NO_RECORDS_FOR_SELECTED_TERM } from '@/lib/active-term';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -18,7 +19,7 @@ export default function NewEventPage() {
   const [location, setLocation] = useState('');
   const [startsAt, setStartsAt] = useState('');
   const [endsAt, setEndsAt] = useState('');
-  const [scope, setScope] = useState<'term'|'team'>('team'); // default to team-specific
+  const [scope, setScope] = useState<'term'|'team'>('team');
   const [teams, setTeams] = useState<Team[]>([]);
   const [teamId, setTeamId] = useState<string>('');
 
@@ -27,9 +28,23 @@ export default function NewEventPage() {
 
   useEffect(() => {
     (async () => {
-      const { data, error } = await supabase.from('teams').select('id,name').order('name');
+      const { termId, message } = getActiveTermId();
+      if (!termId) {
+        setMsg(message);
+        setTeams([]);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('team_terms')
+        .select('teams!inner(id,name)')
+        .eq('term_id', termId)
+        .order('name', { foreignTable: 'teams', ascending: true });
       if (error) setMsg(error.message);
-      setTeams(data || []);
+
+      const scoped = (data || []).map((row: any) => ({ id: String(row.teams.id), name: String(row.teams.name) }));
+      setTeams(scoped);
+      if (!scoped.length) setMsg(NO_RECORDS_FOR_SELECTED_TERM);
     })();
   }, []);
 
@@ -38,8 +53,8 @@ export default function NewEventPage() {
     setMsg(null);
 
     if (!startsAt) { setMsg('Start time is required.'); return; }
-    const termId = localStorage.getItem('kauri.termId');
-    if (!termId) { setMsg('Select a term in the header.'); return; }
+    const { termId, message } = getActiveTermId();
+    if (!termId) { setMsg(message); return; }
 
     setSaving(true);
     try {
@@ -47,7 +62,7 @@ export default function NewEventPage() {
 
       if (scope === 'team') {
         if (!teamId) { setMsg('Choose a team.'); setSaving(false); return; }
-        // ensure team_terms row for this team+term
+
         const tt = await supabase
           .from('team_terms')
           .select('id').eq('team_id', teamId).eq('term_id', termId).maybeSingle();
@@ -65,10 +80,12 @@ export default function NewEventPage() {
 
       const payload: any = {
         title: title.trim() || null,
-        type, location: location.trim() || null,
+        type,
+        location: location.trim() || null,
         starts_at: startsAt,
         ends_at: endsAt || null,
-        team_term_id: teamTermId, // null = whole-term event
+        team_term_id: teamTermId,
+        term_id: termId
       };
 
       const { data, error } = await supabase.from('events').insert(payload).select('id').single();
@@ -144,7 +161,7 @@ export default function NewEventPage() {
             {saving ? 'Saving…' : 'Create event'}
           </button>
 
-          {msg && <p className={`text-sm ${msg.startsWith('Error')?'text-red-800':'text-green-800'}`}>{msg}</p>}
+          {msg && <p className={`text-sm ${msg.startsWith('Error')?'text-red-800':'text-neutral-700'}`}>{msg}</p>}
         </form>
       </div>
     </main>

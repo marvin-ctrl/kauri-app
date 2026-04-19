@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
+import { getActiveTermId, NO_RECORDS_FOR_SELECTED_TERM } from '@/lib/active-term';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -24,8 +25,28 @@ export default function AssignPlayerToTeamsPage() {
 
   useEffect(() => {
     (async () => {
-      const { data } = await supabase.from('teams').select('id,name').order('name');
-      setTeams(data || []);
+      const { termId, message } = getActiveTermId();
+      if (!termId) {
+        setMsg(message);
+        setTeams([]);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('team_terms')
+        .select('teams!inner(id,name)')
+        .eq('term_id', termId)
+        .order('name', { foreignTable: 'teams', ascending: true });
+
+      if (error) {
+        setMsg(error.message);
+        setTeams([]);
+        return;
+      }
+
+      const scopedTeams = (data || []).map((row: any) => row.teams as Team);
+      setTeams(scopedTeams);
+      if (!scopedTeams.length) setMsg(NO_RECORDS_FOR_SELECTED_TERM);
     })();
   }, []);
 
@@ -43,8 +64,8 @@ export default function AssignPlayerToTeamsPage() {
 
     setSaving(true);
     try {
-      const termId = typeof window !== 'undefined' ? localStorage.getItem('kauri.termId') : null;
-      if (!termId) { setMsg('Select a term in the header.'); setSaving(false); return; }
+      const { termId, message } = getActiveTermId();
+      if (!termId) { setMsg(message); setSaving(false); return; }
 
       // 1) ensure player_terms row
       const pt = await supabase
@@ -156,7 +177,7 @@ export default function AssignPlayerToTeamsPage() {
                   </li>
                 );
               })}
-              {teams.length === 0 && <li className="text-sm text-neutral-700">No teams yet.</li>}
+              {teams.length === 0 && <li className="text-sm text-neutral-700">No records for selected term</li>}
             </ul>
           </fieldset>
 
